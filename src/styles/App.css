@@ -40,3 +40,11 @@
 .read-the-docs {
   color: #888;
 }
+.sidebar-btn {
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.sidebar-btn:hover {
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
