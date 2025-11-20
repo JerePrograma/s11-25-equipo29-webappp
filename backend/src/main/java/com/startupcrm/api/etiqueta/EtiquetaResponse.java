@@ -1,4 +1,8 @@
 package com.startupcrm.api.etiqueta;
 
-public class EtiquetaResponse {
-}
+public record EtiquetaResponse(
+        Long   id,
+        String nombre,
+        String color,
+        String aplicaA
+) {}

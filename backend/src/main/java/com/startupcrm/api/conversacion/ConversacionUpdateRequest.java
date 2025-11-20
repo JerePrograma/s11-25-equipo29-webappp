@@ -1,4 +1,6 @@
 package com.startupcrm.api.conversacion;
 
-public class ConversacionUpdateRequest {
-}
+public record ConversacionUpdateRequest(
+        String estado,              // 'abierta','cerrada','pendiente'
+        Long   asignadoAId
+) {}

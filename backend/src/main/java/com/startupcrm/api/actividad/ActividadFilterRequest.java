@@ -1,4 +1,12 @@
 package com.startupcrm.api.actividad;
 
-public class ActividadFilterRequest {
-}
+import java.time.OffsetDateTime;
+
+public record ActividadFilterRequest(
+        Long            clienteId,
+        String          tipo,
+        OffsetDateTime fechaDesde,
+        OffsetDateTime  fechaHasta,
+        int             page,
+        int             size
+) {}

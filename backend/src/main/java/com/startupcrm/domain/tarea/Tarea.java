@@ -7,9 +7,18 @@ import com.startupcrm.domain.cliente.Cliente;
 import com.startupcrm.domain.conversacion.Conversacion;
 import com.startupcrm.domain.usuario.Usuario;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "tarea")
 public class Tarea {

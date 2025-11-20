@@ -1,4 +1,7 @@
 package com.startupcrm.api.usuario;
 
-public class AuthResponse {
-}
+public record AuthResponse(
+        String accessToken,
+        String refreshToken,
+        long   expiresInSeconds
+) {}

@@ -1,4 +1,15 @@
 package com.startupcrm.api.usuario;
 
-public class UsuarioResponse {
-}
+import java.time.OffsetDateTime;
+
+public record UsuarioResponse(
+        Long   id,
+        String nombre,
+        String email,
+        String telefono,
+        String estado,
+        Long   rolId,
+        String rolNombre,
+        OffsetDateTime creadoEn,
+        OffsetDateTime ultimoLoginEn
+) {}
