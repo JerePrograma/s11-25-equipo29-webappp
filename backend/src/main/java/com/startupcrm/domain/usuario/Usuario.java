@@ -36,9 +36,9 @@ public class Usuario implements UserDetails {
 
     private String telefono;             // Teléfono del usuario
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "rol_id")
-    private Rol rol;                     // Rol asignado
+    private Rol rol;     // Rol asignado
 
     private String estado;               // 'activo' / 'inactivo' / 'bloqueado' (opcional)
 

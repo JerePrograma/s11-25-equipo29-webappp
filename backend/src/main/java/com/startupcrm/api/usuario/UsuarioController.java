@@ -2,9 +2,6 @@
 package com.startupcrm.api.usuario;
 
 import com.startupcrm.application.usuario.UsuarioService;
-import com.startupcrm.domain.usuario.Rol;
-import com.startupcrm.domain.usuario.Usuario;
-import com.startupcrm.application.usuario.RolService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,58 +11,31 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
-    private final RolService rolService;
-    private final UsuarioApiMapper mapper;
 
-    public UsuarioController(UsuarioService usuarioService,
-                             RolService rolService,
-                             UsuarioApiMapper mapper) {
+    public UsuarioController(UsuarioService usuarioService) {
         this.usuarioService = usuarioService;
-        this.rolService = rolService;
-        this.mapper = mapper;
     }
 
+    // Registro / creación de usuario (público o solo admin, según tu SecurityConfig)
     @PostMapping
     public UsuarioResponse crear(@RequestBody UsuarioCreateRequest request) {
-        Rol rol = rolService.obtenerPorId(request.rolId());
-
-        Usuario u = new Usuario();
-        u.setNombre(request.nombre());
-        u.setEmail(request.email());
-        u.setPasswordHash("TODO_ENCODE"); // acá iría el AuthService / PasswordEncoder
-        u.setTelefono(request.telefono());
-        u.setRol(rol);
-        u.setEstado("activo");
-
-        Usuario guardado = usuarioService.crear(u);
-        return mapper.toResponse(guardado);
+        return usuarioService.registrar(request);
     }
 
     @GetMapping("/{id}")
     public UsuarioResponse obtener(@PathVariable Long id) {
-        Usuario u = usuarioService.obtenerPorId(id);
-        return mapper.toResponse(u);
+        return usuarioService.obtenerResponsePorId(id);
     }
 
     @GetMapping
     public List<UsuarioResponse> listarTodos() {
-        return usuarioService.listarTodos()
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+        return usuarioService.listarTodosResponse();
     }
 
     @PutMapping("/{id}")
     public UsuarioResponse actualizar(@PathVariable Long id,
                                       @RequestBody UsuarioUpdateRequest request) {
-        Usuario u = usuarioService.obtenerPorId(id);
-        mapper.updateEntity(u, request);
-        if (request.rolId() != null) {
-            Rol rol = rolService.obtenerPorId(request.rolId());
-            u.setRol(rol);
-        }
-        Usuario actualizado = usuarioService.actualizar(u);
-        return mapper.toResponse(actualizado);
+        return usuarioService.actualizar(id, request);
     }
 
     @DeleteMapping("/{id}")

@@ -30,7 +30,7 @@ public class SecurityConfigurations {
 
                     // Auth & registro
                     req.requestMatchers(HttpMethod.POST, "/api/login").permitAll();
-                    req.requestMatchers(HttpMethod.POST, "/api/usuarios/registro").permitAll();
+                    req.requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll();
 
                     // Otros endpoints públicos
                     req.requestMatchers("/api/roles").permitAll();
