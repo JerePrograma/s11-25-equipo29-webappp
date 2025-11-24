@@ -11,10 +11,12 @@ import com.startupcrm.domain.usuario.Usuario;
 import com.startupcrm.domain.usuario.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.regex.Pattern;
 
 @Service
 public class UsuarioService {
@@ -23,6 +25,10 @@ public class UsuarioService {
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
     private final UsuarioApiMapper usuarioApiMapper;
+
+    // ====== validador de email (migrado desde AuthService) ======
+    private static final Pattern EMAIL_PATTERN =
+            Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           RolRepository rolRepository,
@@ -36,11 +42,16 @@ public class UsuarioService {
 
     // ===================== API/DTO =====================
 
+    @Transactional
     public UsuarioResponse registrar(UsuarioCreateRequest request) {
+        validarEmail(request.email());
+        validarPassword(request.password());
+
         if (usuarioRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("Ya existe un usuario con email: " + request.email());
         }
 
+        // En este flujo asumimos que el rol viene dado (admin)
         Rol rol = rolRepository.findById(request.rolId())
                 .orElseThrow(() -> new NoSuchElementException("Rol no encontrado: " + request.rolId()));
 
@@ -57,6 +68,7 @@ public class UsuarioService {
         return usuarioApiMapper.toResponse(guardado);
     }
 
+    @Transactional
     public UsuarioResponse actualizar(Long id, UsuarioUpdateRequest request) {
         Usuario usuario = obtenerPorId(id);
 
@@ -112,5 +124,20 @@ public class UsuarioService {
 
     public void eliminar(Long id) {
         usuarioRepository.deleteById(id);
+    }
+
+    // ===================== Validaciones privadas =====================
+
+    private void validarEmail(String email) {
+        if (email == null || !EMAIL_PATTERN.matcher(email).matches()) {
+            throw new IllegalArgumentException("Formato de email inválido.");
+        }
+    }
+
+    private void validarPassword(String password) {
+        if (password == null || password.length() < 6) {
+            throw new IllegalArgumentException("La contraseña debe tener al menos 6 caracteres.");
+        }
+        // Podés agregar reglas extra: mayúsculas, números, etc.
     }
 }

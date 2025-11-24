@@ -8,6 +8,7 @@ import com.startupcrm.api.usuario.RolUpdateRequest;
 import com.startupcrm.domain.usuario.Rol;
 import com.startupcrm.domain.usuario.RolRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -78,5 +79,32 @@ public class RolService {
 
     public List<Rol> listarTodos() {
         return rolRepository.findAll();
+    }
+
+    /**
+     * CUS-04: Gestión de Roles y Permisos
+     * Permite actualizar permisos de un rol a partir de un JSON de permisos.
+     * Ejemplo de permisosJson:
+     * {
+     *   "contactos": ["ver", "crear", "editar"],
+     *   "conversaciones": ["ver", "responder"],
+     *   "tareas": ["ver", "crear"],
+     *   "metricas": ["ver"],
+     *   "configuracion": ["ver", "editar"]
+     * }
+     */
+    @Transactional
+    public Rol actualizarPermisosRol(Long rolId, String permisosJson) {
+        Rol rol = obtenerPorId(rolId);
+        rol.setPermisosJson(permisosJson);
+        return rolRepository.save(rol);
+    }
+
+    // Si querés un comando explícito:
+    public record ActualizarPermisosCommand(Long rolId, String permisosJson) {}
+
+    @Transactional
+    public Rol actualizarPermisosRol(ActualizarPermisosCommand cmd) {
+        return actualizarPermisosRol(cmd.rolId(), cmd.permisosJson());
     }
 }

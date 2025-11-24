@@ -2,7 +2,6 @@
 package com.startupcrm.api.usuario;
 
 import com.startupcrm.application.usuario.RolService;
-import com.startupcrm.domain.usuario.Rol;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,42 +11,30 @@ import java.util.List;
 public class RolController {
 
     private final RolService rolService;
-    private final RolApiMapper mapper;
 
-    public RolController(RolService rolService, RolApiMapper mapper) {
+    public RolController(RolService rolService) {
         this.rolService = rolService;
-        this.mapper = mapper;
     }
 
     @PostMapping
     public RolResponse crear(@RequestBody RolCreateRequest request) {
-        Rol rol = new Rol();
-        rol.setNombre(request.nombre());
-        rol.setDescripcion(request.descripcion());
-        rol.setPermisosJson(request.permisosJson());
-        Rol creado = rolService.crear(rol);
-        return mapper.toResponse(creado);
+        // Delegás toda la lógica + mapping al servicio
+        return rolService.crear(request);
     }
 
     @GetMapping
     public List<RolResponse> listarTodos() {
-        return rolService.listarTodos()
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+        return rolService.listarTodosResponse();
     }
 
     @GetMapping("/{id}")
     public RolResponse obtener(@PathVariable Long id) {
-        return mapper.toResponse(rolService.obtenerPorId(id));
+        return rolService.obtenerResponsePorId(id);
     }
 
     @PutMapping("/{id}")
     public RolResponse actualizar(@PathVariable Long id,
                                   @RequestBody RolUpdateRequest request) {
-        Rol rol = rolService.obtenerPorId(id);
-        mapper.updateEntity(rol, request);
-        Rol actualizado = rolService.actualizar(rol);
-        return mapper.toResponse(actualizado);
+        return rolService.actualizar(id, request);
     }
 }
