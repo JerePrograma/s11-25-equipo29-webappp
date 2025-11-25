@@ -3,7 +3,8 @@ import React, { useState } from "react";
 
 // Igual que en Register: configurable por env o default localhost
 const API_BASE_URL =
-  import.meta?.env?.VITE_API_BASE_URL || "http://localhost:8080";
+import.meta?.env?.VITE_API_BASE_URL || "http://localhost:8080";
+import { Outlet, Link } from "react-router-dom";
 
 const Login = () => {
   const [form, setForm] = useState({
@@ -147,7 +148,10 @@ const Login = () => {
         <p className="text-center mt-2">
           ¿No tienes cuenta?{" "}
           <a href="#" className="text-primary">
+            <Link to='/register'>
             Regístrate aquí
+            </Link>
+            
           </a>
           {/* TODO: reemplazar por <Link to="/register"> si usas react-router */}
         </p>

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 // Ajusta esto según tu setup (Vite/CRA)
 const API_BASE_URL =
   import.meta?.env?.VITE_API_BASE_URL || "http://localhost:8080";
+import { Outlet, Link } from "react-router-dom";
 
 const Register = () => {
   const [form, setForm] = useState({
@@ -179,7 +180,9 @@ const Register = () => {
         <p className="text-center mt-2">
           ¿Ya tienes una cuenta?{" "}
           <a href="#" className="text-primary">
-            Inicia sesión aquí
+            <Link to='/login'>
+            Inicia sesion aquí
+            </Link>
           </a>
         </p>
       </section>
