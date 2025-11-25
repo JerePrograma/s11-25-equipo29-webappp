@@ -4,7 +4,15 @@
 package com.startupcrm.domain.etiqueta;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "etiqueta")
 public class Etiqueta {
@@ -17,6 +25,7 @@ public class Etiqueta {
 
     private String color;     // Color UI
 
+    @Column(name = "aplica_a")
     private String aplicaA;   // 'cliente','conversacion','tarea'
 
     // getters/setters...

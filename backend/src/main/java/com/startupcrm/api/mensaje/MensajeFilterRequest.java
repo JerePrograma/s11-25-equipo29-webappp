@@ -1,4 +1,7 @@
 package com.startupcrm.api.mensaje;
 
-public class MensajeFilterRequest {
-}
+public record MensajeFilterRequest(
+        Long conversacionId,
+        int  page,
+        int  size
+) {}

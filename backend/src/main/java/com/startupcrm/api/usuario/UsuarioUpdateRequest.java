@@ -1,4 +1,8 @@
 package com.startupcrm.api.usuario;
 
-public class UsuarioUpdateRequest {
-}
+public record UsuarioUpdateRequest(
+        String nombre,
+        String telefono,
+        Long   rolId,
+        String estado       // 'activo','inactivo'
+) {}

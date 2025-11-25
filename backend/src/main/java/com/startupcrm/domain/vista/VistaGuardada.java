@@ -5,8 +5,17 @@ package com.startupcrm.domain.vista;
 
 import com.startupcrm.domain.usuario.Usuario;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.OffsetDateTime;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "vista_guardada")
 public class VistaGuardada {

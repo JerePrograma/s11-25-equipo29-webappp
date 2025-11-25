@@ -8,8 +8,17 @@ import com.startupcrm.domain.usuario.Usuario;
 import com.startupcrm.domain.conversacion.Conversacion;
 import com.startupcrm.domain.tarea.Tarea;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.OffsetDateTime;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "actividad")
 public class Actividad {

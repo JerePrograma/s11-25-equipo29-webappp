@@ -1,4 +1,6 @@
 package com.startupcrm.api.etiqueta;
 
-public class EtiquetaUpdateRequest {
-}
+public record EtiquetaUpdateRequest(
+        String nombre,
+        String color
+) {}

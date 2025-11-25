@@ -5,7 +5,15 @@ package com.startupcrm.domain.etiqueta;
 
 import com.startupcrm.domain.conversacion.Conversacion;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "conversacion_etiqueta")
 public class ConversacionEtiqueta {
