@@ -1,4 +1,5 @@
 import React from "react";
+import { Outlet, Link } from "react-router-dom";
 
 const Register = () => {
   return (
@@ -41,7 +42,9 @@ const Register = () => {
         <p className="text-center mt-2">
           ¿Ya tienes una cuenta?{" "}
           <a href="#" className="text-primary">
+            <Link to='/login'>
             Inicia sesion aquí
+            </Link>
           </a>
         </p>
       </section>
