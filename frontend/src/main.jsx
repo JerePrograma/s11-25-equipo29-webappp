@@ -8,12 +8,14 @@ import Dashboard from "./pages/dashboard.jsx";
 import Contactos from "./pages/contactos.jsx";  
 import Mensajes  from "./pages/mensajes.jsx";
 import Configuracion  from "./pages/configuracion.jsx";
+import Login  from "./components/login.jsx";
 
 
 
 
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import Register from "./components/register.jsx";
 ///////////////////////////////////////////////////////////////////////////////////////////// 
 
 
@@ -30,6 +32,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="contactos" element={<Contactos />} />
           <Route path="mensajes" element={<Mensajes />} />
           <Route path="configuracion" element={<Configuracion/>} />
+          <Route path="login" element={<Login/>} />
+          <Route path="Register" element={<Register/>} />
 
 
 
