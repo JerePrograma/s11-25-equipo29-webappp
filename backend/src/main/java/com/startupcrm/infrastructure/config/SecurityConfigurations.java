@@ -36,6 +36,16 @@ public class SecurityConfigurations {
                     req.requestMatchers("/api/roles").permitAll();
                     req.requestMatchers(HttpMethod.GET, "/api/pagos/recibo/**").permitAll();
 
+                    // Swagger / OpenAPI (UI + JSON/YAML)
+                    req.requestMatchers(
+                            "/swagger-ui.html",
+                            "/swagger-ui/**",
+                            "/v3/api-docs",
+                            "/v3/api-docs/**",
+                            "/v3/api-docs.yaml"
+                    ).permitAll();
+
+                    // Todo lo demás, autenticado
                     req.anyRequest().authenticated();
                 })
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
