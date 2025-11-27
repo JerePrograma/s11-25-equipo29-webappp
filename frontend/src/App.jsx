@@ -53,7 +53,17 @@ function App() {
             <span className="fw-bold">⚙</span>
             <span>Configuración</span>
           </Link>
+
+          <Link
+            to="/usuarios"
+            className="btn btn-outline-secondary text-start d-flex align-items-center gap-2 sidebar-btn"
+          >
+            <span className="fw-bold">⚙</span>
+            <span>Usuarios</span>
+          </Link>
         </nav>
+        
+
 
         {/* Footer del sidebar */}
         <div className="mt-auto pt-4 small text-muted">

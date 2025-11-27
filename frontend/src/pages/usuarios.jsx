@@ -87,8 +87,8 @@ function Contactos() {
 
       {/* Título */}
       <header className="mb-4">
-        <h1 className="h3 fw-bold mb-1">Contactos</h1>
-        <p className="text-muted mb-0">Gestioná tus leads y conversaciones.</p>
+        <h1 className="h3 fw-bold mb-1">Usuarios</h1>
+        <p className="text-muted mb-0">Agrega usuarios a tu trabajo.</p>
       </header>
 
       {/* Buscador + Botón */}
@@ -106,7 +106,7 @@ function Contactos() {
           className="btn btn-dark"
           onClick={() => setModalAgregar(true)}
         >
-          + Nuevo contacto
+          + Usuario
         </button>
       </section>
 
@@ -118,8 +118,8 @@ function Contactos() {
               <thead className="table-light">
                 <tr>
                   <th>Nombre</th>
-                  <th>Canal</th>
-                  <th>Estado</th>
+                  <th>Correo Electronico</th>
+                  <th>Pais</th>
                   <th className="text-end">Acciones</th>
                 </tr>
               </thead>
@@ -128,7 +128,7 @@ function Contactos() {
                 {contactosFiltrados.length === 0 ? (
                   <tr>
                     <td colSpan="4" className="text-center py-4 text-muted">
-                      No se encontraron contactos.
+                      No se encontraron Contactos.
                     </td>
                   </tr>
                 ) : (
