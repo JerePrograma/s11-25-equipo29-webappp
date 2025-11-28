@@ -2,10 +2,8 @@
 import React, { useState } from "react";
 
 function Contactos() {
-  // Estado del buscador
   const [busqueda, setBusqueda] = useState("");
 
-  // Lista de contactos
   const [contactos, setContactos] = useState([
     {
       nombre: "María Gómez",
@@ -21,16 +19,17 @@ function Contactos() {
     },
   ]);
 
-  // Estados de modales
   const [modalAgregar, setModalAgregar] = useState(false);
   const [modalVer, setModalVer] = useState(false);
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
 
-  // Contacto seleccionado
+  // 👁 Estados para ver/ocultar contraseñas
+  const [verPassAgregar, setVerPassAgregar] = useState(false);
+  const [verPassEditar, setVerPassEditar] = useState(false);
+
   const [contactoSeleccionado, setContactoSeleccionado] = useState(null);
 
-  // Formulario agregar
   const [nuevoContacto, setNuevoContacto] = useState({
     nombre: "",
     correo: "",
@@ -38,7 +37,6 @@ function Contactos() {
     pais: "",
   });
 
-  // Formulario editar
   const [editarContacto, setEditarContacto] = useState({
     nombre: "",
     correo: "",
@@ -46,27 +44,25 @@ function Contactos() {
     pais: "",
   });
 
-  // Filtrar búsqueda
   const contactosFiltrados = contactos.filter((c) =>
     c.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  // Guardar nuevo
   const guardarNuevoContacto = () => {
     setContactos([...contactos, nuevoContacto]);
     setNuevoContacto({ nombre: "", correo: "", contraseña: "", pais: "" });
+    setVerPassAgregar(false);
     setModalAgregar(false);
   };
 
-  // Guardar edición
   const guardarEdicion = () => {
     setContactos(
       contactos.map((c) => (c === contactoSeleccionado ? editarContacto : c))
     );
+    setVerPassEditar(false);
     setModalEditar(false);
   };
 
-  // Eliminar
   const eliminarContacto = () => {
     setContactos(contactos.filter((c) => c !== contactoSeleccionado));
     setModalEliminar(false);
@@ -74,13 +70,11 @@ function Contactos() {
 
   return (
     <div className="container-fluid py-4">
-      {/* Título */}
       <header className="mb-4">
         <h1 className="h3 fw-bold mb-1">Usuarios</h1>
         <p className="text-muted mb-0">Agrega usuarios a tu trabajo.</p>
       </header>
 
-      {/* Buscador + botón */}
       <section className="d-flex justify-content-between align-items-center mb-4">
         <input
           type="text"
@@ -95,7 +89,6 @@ function Contactos() {
         </button>
       </section>
 
-      {/* Tabla */}
       <div className="card shadow-sm border-0">
         <div className="card-body p-0">
           <div className="table-responsive">
@@ -121,14 +114,13 @@ function Contactos() {
                     <tr key={i}>
                       <td>{c.nombre}</td>
                       <td>{c.correo}</td>
-                      <td className="">
+                      <td>
                         <span className="badge rounded-pill bg-success text-white px-3 py-2 fw-semibold">
                           {c.pais}
                         </span>
                       </td>
 
                       <td className="text-end">
-                        {/* Ver */}
                         <button
                           className="btn btn-sm btn-outline-primary me-2"
                           onClick={() => {
@@ -139,7 +131,6 @@ function Contactos() {
                           Ver
                         </button>
 
-                        {/* Editar */}
                         <button
                           className="btn btn-sm btn-outline-secondary me-2"
                           onClick={() => {
@@ -151,7 +142,6 @@ function Contactos() {
                           Editar
                         </button>
 
-                        {/* Eliminar */}
                         <button
                           className="btn btn-sm btn-outline-danger"
                           onClick={() => {
@@ -171,7 +161,9 @@ function Contactos() {
         </div>
       </div>
 
-      {/* MODAL AGREGAR */}
+      {/* ============================
+          MODAL AGREGAR
+      ============================ */}
       {modalAgregar && (
         <div
           className="modal fade show d-block"
@@ -215,17 +207,27 @@ function Contactos() {
                 />
 
                 <label className="form-label">Contraseña</label>
-                <input
-                  type="password"
-                  className="form-control mb-3"
-                  value={nuevoContacto.contraseña}
-                  onChange={(e) =>
-                    setNuevoContacto({
-                      ...nuevoContacto,
-                      contraseña: e.target.value,
-                    })
-                  }
-                />
+                <div className="input-group mb-3">
+                  <input
+                    type={verPassAgregar ? "text" : "password"}
+                    className="form-control"
+                    value={nuevoContacto.contraseña}
+                    onChange={(e) =>
+                      setNuevoContacto({
+                        ...nuevoContacto,
+                        contraseña: e.target.value,
+                      })
+                    }
+                  />
+                  <button
+                    className="btn btn-outline-secondary"
+                    type="button"
+                    style={{ width: "90px" }} // ← ancho fijo
+                    onClick={() => setVerPassAgregar(!verPassAgregar)}
+                  >
+                    {verPassAgregar ? "Ocultar" : "Ver"}
+                  </button>
+                </div>
 
                 <label className="form-label">País</label>
                 <input
@@ -233,7 +235,10 @@ function Contactos() {
                   className="form-control"
                   value={nuevoContacto.pais}
                   onChange={(e) =>
-                    setNuevoContacto({ ...nuevoContacto, pais: e.target.value })
+                    setNuevoContacto({
+                      ...nuevoContacto,
+                      pais: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -255,7 +260,9 @@ function Contactos() {
         </div>
       )}
 
-      {/* MODAL VER */}
+      {/* ============================
+          MODAL VER
+      ============================ */}
       {modalVer && contactoSeleccionado && (
         <div
           className="modal fade show d-block"
@@ -299,7 +306,9 @@ function Contactos() {
         </div>
       )}
 
-      {/* MODAL EDITAR */}
+      {/* ============================
+          MODAL EDITAR
+      ============================ */}
       {modalEditar && (
         <div
           className="modal fade show d-block"
@@ -343,17 +352,27 @@ function Contactos() {
                 />
 
                 <label className="form-label">Contraseña</label>
-                <input
-                  type="password"
-                  className="form-control mb-3"
-                  value={editarContacto.contraseña}
-                  onChange={(e) =>
-                    setEditarContacto({
-                      ...editarContacto,
-                      contraseña: e.target.value,
-                    })
-                  }
-                />
+                <div className="input-group mb-3">
+                  <input
+                    type={verPassEditar ? "text" : "password"}
+                    className="form-control"
+                    value={editarContacto.contraseña}
+                    onChange={(e) =>
+                      setEditarContacto({
+                        ...editarContacto,
+                        contraseña: e.target.value,
+                      })
+                    }
+                  />
+                  <button
+                    className="btn btn-outline-secondary"
+                    type="button"
+                    style={{ width: "90px" }} // ← ancho fijo
+                    onClick={() => setVerPassEditar(!verPassEditar)}
+                  >
+                    {verPassEditar ? "Ocultar" : "Ver"}
+                  </button>
+                </div>
 
                 <label className="form-label">País</label>
                 <input
@@ -386,7 +405,9 @@ function Contactos() {
         </div>
       )}
 
-      {/* MODAL ELIMINAR */}
+      {/* ============================
+          MODAL ELIMINAR
+      ============================ */}
       {modalEliminar && (
         <div
           className="modal fade show d-block"
