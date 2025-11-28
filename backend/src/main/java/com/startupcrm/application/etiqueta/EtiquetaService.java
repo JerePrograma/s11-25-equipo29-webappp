@@ -1,18 +1,25 @@
+// src/main/java/com/startupcrm/application/etiqueta/EtiquetaService.java
 package com.startupcrm.application.etiqueta;
 
+import com.startupcrm.application.actividad.ActividadService;
 import com.startupcrm.application.cliente.ClienteService;
 import com.startupcrm.application.conversacion.ConversacionService;
+import com.startupcrm.domain.actividad.Actividad;
 import com.startupcrm.domain.cliente.Cliente;
 import com.startupcrm.domain.conversacion.Conversacion;
 import com.startupcrm.domain.etiqueta.ClienteEtiqueta;
 import com.startupcrm.domain.etiqueta.ConversacionEtiqueta;
 import com.startupcrm.domain.etiqueta.Etiqueta;
 import com.startupcrm.domain.etiqueta.EtiquetaRepository;
+import com.startupcrm.domain.usuario.Usuario;
+import com.startupcrm.domain.usuario.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @Service
 public class EtiquetaService {
@@ -25,17 +32,23 @@ public class EtiquetaService {
     private final ConversacionService conversacionService;
     private final ClienteEtiquetaService clienteEtiquetaService;
     private final ConversacionEtiquetaService conversacionEtiquetaService;
+    private final ActividadService actividadService;
+    private final UsuarioRepository usuarioRepository;
 
     public EtiquetaService(EtiquetaRepository etiquetaRepository,
                            ClienteService clienteService,
                            ConversacionService conversacionService,
                            ClienteEtiquetaService clienteEtiquetaService,
-                           ConversacionEtiquetaService conversacionEtiquetaService) {
+                           ConversacionEtiquetaService conversacionEtiquetaService,
+                           ActividadService actividadService,
+                           UsuarioRepository usuarioRepository) {
         this.etiquetaRepository = etiquetaRepository;
         this.clienteService = clienteService;
         this.conversacionService = conversacionService;
         this.clienteEtiquetaService = clienteEtiquetaService;
         this.conversacionEtiquetaService = conversacionEtiquetaService;
+        this.actividadService = actividadService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     // ========= CRUD / operaciones base sobre Etiqueta =========
@@ -76,7 +89,7 @@ public class EtiquetaService {
         etiquetaRepository.deleteById(id);
     }
 
-    // ========= Casos de uso de alto nivel para el Controller =========
+    // ========= Casos de uso de alto nivel (para controllers) =========
 
     @Transactional
     public Etiqueta crearEtiqueta(String nombre, String color, String aplicaA) {
@@ -99,6 +112,8 @@ public class EtiquetaService {
     public List<Etiqueta> listarEtiquetasPorAplicaA(String aplicaA) {
         return listarPorAplicaA(aplicaA);
     }
+
+    // ========= Relaciones con Cliente / Conversacion =========
 
     @Transactional
     public void asignarEtiquetaACliente(Long clienteId, Long etiquetaId) {
@@ -130,5 +145,63 @@ public class EtiquetaService {
                 .stream()
                 .map(ConversacionEtiqueta::getEtiqueta)
                 .toList();
+    }
+
+    // =========================================================
+    // CUS-07: Gestionar Etiquetas de Contacto
+    // RF-07
+    // =========================================================
+
+    /**
+     * Reemplaza el conjunto de etiquetas de un cliente por las provistas
+     * y registra una actividad de auditoría.
+     *
+     * @param clienteId      id del contacto (cliente/lead)
+     * @param etiquetaIds    ids de etiquetas a dejar asociadas
+     * @param usuarioActorId id del usuario que realiza la acción
+     */
+    @Transactional
+    public void actualizarEtiquetasDeCliente(Long clienteId,
+                                             List<Long> etiquetaIds,
+                                             Long usuarioActorId) {
+        Cliente cliente = clienteService.obtenerPorId(clienteId);
+
+        // 1) Limpiar etiquetas actuales del cliente
+        clienteEtiquetaService.eliminarPorCliente(cliente);
+
+        // 2) Asignar nuevas etiquetas
+        List<Etiqueta> etiquetas = etiquetaIds.stream()
+                .map(this::obtenerPorId)
+                .toList();
+
+        for (Etiqueta etiqueta : etiquetas) {
+            clienteEtiquetaService.asignarEtiquetaACliente(cliente, etiqueta);
+        }
+
+        // 3) Registrar actividad (si tenemos actor)
+        if (usuarioActorId != null) {
+            Usuario actor = usuarioRepository.findById(usuarioActorId)
+                    .orElseThrow(() -> new NoSuchElementException("Usuario actor no encontrado: " + usuarioActorId));
+
+            Actividad actividad = new Actividad();
+            actividad.setCliente(cliente);
+            actividad.setUsuario(actor);
+            actividad.setTipo("cliente_etiquetas_actualizadas");
+            actividad.setFecha(OffsetDateTime.now());
+
+            String etiquetasNombres = etiquetas.stream()
+                    .map(Etiqueta::getNombre)
+                    .collect(Collectors.joining("\",\"", "[\"", "\"]"));
+
+            String metadataJson = String.format(
+                    "{\"clienteId\": %d, \"etiquetas\": %s}",
+                    cliente.getId(),
+                    etiquetasNombres
+            );
+
+            actividad.setMetadataJson(metadataJson);
+
+            actividadService.registrar(actividad);
+        }
     }
 }
