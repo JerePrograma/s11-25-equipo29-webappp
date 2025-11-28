@@ -2,7 +2,6 @@
 package com.startupcrm.api.actividad;
 
 import com.startupcrm.application.actividad.ActividadService;
-import com.startupcrm.application.cliente.ClienteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,7 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 @Tag(
@@ -22,15 +20,9 @@ import java.util.List;
 public class ActividadController {
 
     private final ActividadService actividadService;
-    private final ClienteService clienteService;
-    private final ActividadApiMapper mapper;
 
-    public ActividadController(ActividadService actividadService,
-                               ClienteService clienteService,
-                               ActividadApiMapper mapper) {
+    public ActividadController(ActividadService actividadService) {
         this.actividadService = actividadService;
-        this.clienteService = clienteService;
-        this.mapper = mapper;
     }
 
     @Operation(
@@ -49,11 +41,8 @@ public class ActividadController {
             @Parameter(description = "ID del cliente", example = "10")
             @PathVariable Long clienteId
     ) {
-        var c = clienteService.obtenerPorId(clienteId);
-        return actividadService.listarPorCliente(c)
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+        // Sin lógica: delega todo al service
+        return actividadService.listarPorCliente(clienteId);
     }
 
     @Operation(
@@ -75,11 +64,7 @@ public class ActividadController {
                     example = "2025-11-21T00:00:00Z")
             @RequestParam String hasta
     ) {
-        OffsetDateTime d = OffsetDateTime.parse(desde);
-        OffsetDateTime h = OffsetDateTime.parse(hasta);
-        return actividadService.listarEntreFechas(d, h)
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+        // Sin lógica: delega todo al service
+        return actividadService.listarEntreFechas(desde, hasta);
     }
 }

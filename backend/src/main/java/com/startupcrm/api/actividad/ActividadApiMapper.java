@@ -2,25 +2,19 @@
 package com.startupcrm.api.actividad;
 
 import com.startupcrm.domain.actividad.Actividad;
-import com.startupcrm.domain.cliente.Cliente;
-import com.startupcrm.domain.usuario.Usuario;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ActividadApiMapper {
 
     public ActividadResponse toResponse(Actividad a) {
-        Cliente cliente = a.getCliente();
-        Usuario usuario = a.getUsuario();
+        Long clienteId = (a.getCliente() != null) ? a.getCliente().getId() : null;
+        Long usuarioId = (a.getUsuario() != null) ? a.getUsuario().getId() : null;
 
         return new ActividadResponse(
                 a.getId(),
-                cliente != null ? cliente.getId() : null,
-                cliente != null ? cliente.getNombre() : null,
-                usuario != null ? usuario.getId() : null,
-                usuario != null ? usuario.getNombre() : null,
-                a.getConversacion() != null ? a.getConversacion().getId() : null,
-                a.getTarea() != null ? a.getTarea().getId() : null,
+                clienteId,
+                usuarioId,
                 a.getTipo(),
                 a.getFecha(),
                 a.getMetadataJson()
