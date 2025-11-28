@@ -1,82 +1,72 @@
 // src/pages/Contactos.jsx
-// Importamos React y el hook useState para manejar estados.
 import React, { useState } from "react";
 
 function Contactos() {
   // Estado del buscador
   const [busqueda, setBusqueda] = useState("");
 
-  // Lista de contactos (estado dinámico que puede crecer/disminuir)
+  // Lista de contactos
   const [contactos, setContactos] = useState([
     {
       nombre: "María Gómez",
-      canal: "WhatsApp",
-      estado: "Lead activo",
-      badge: "success",
-      ultima: "Hace 2 horas",
+      correo: "WhatsApp@gmail.com",
+      contraseña: "1234567",
+      pais: "España",
     },
     {
       nombre: "Juan Pérez",
-      canal: "Email",
-      estado: "En seguimiento",
-      badge: "warning text-dark",
-      ultima: "Ayer",
-    },
-    {
-      nombre: "Ana López",
-      canal: "WhatsApp",
-      estado: "Respuesta pendiente",
-      badge: "danger",
-      ultima: "Hace 3 días",
+      correo: "juan@gmail.com",
+      contraseña: "abcdef",
+      pais: "México",
     },
   ]);
 
-  // Estados para controlar qué modal está abierto
+  // Estados de modales
   const [modalAgregar, setModalAgregar] = useState(false);
   const [modalVer, setModalVer] = useState(false);
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
 
-  // Contacto seleccionado (para ver, editar o eliminar)
+  // Contacto seleccionado
   const [contactoSeleccionado, setContactoSeleccionado] = useState(null);
 
-  // Estado para el formulario de "Agregar nuevo contacto"
+  // Formulario agregar
   const [nuevoContacto, setNuevoContacto] = useState({
     nombre: "",
-    canal: "WhatsApp",
-    estado: "Activo",
+    correo: "",
+    contraseña: "",
+    pais: "",
   });
 
-  // Estado del formulario de edición
+  // Formulario editar
   const [editarContacto, setEditarContacto] = useState({
     nombre: "",
-    canal: "",
-    estado: "",
+    correo: "",
+    contraseña: "",
+    pais: "",
   });
 
-  // Filtro del buscador
+  // Filtrar búsqueda
   const contactosFiltrados = contactos.filter((c) =>
     c.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  // Guardar nuevo contacto en la lista
+  // Guardar nuevo
   const guardarNuevoContacto = () => {
     setContactos([...contactos, nuevoContacto]);
-    setNuevoContacto({ nombre: "", canal: "WhatsApp", estado: "Activo" });
+    setNuevoContacto({ nombre: "", correo: "", contraseña: "", pais: "" });
     setModalAgregar(false);
   };
 
-  // Guardar cambios del modal Editar
+  // Guardar edición
   const guardarEdicion = () => {
     setContactos(
-      contactos.map((c) =>
-        c.nombre === contactoSeleccionado.nombre ? editarContacto : c
-      )
+      contactos.map((c) => (c === contactoSeleccionado ? editarContacto : c))
     );
     setModalEditar(false);
   };
 
-  // Eliminar contacto
+  // Eliminar
   const eliminarContacto = () => {
     setContactos(contactos.filter((c) => c !== contactoSeleccionado));
     setModalEliminar(false);
@@ -84,28 +74,23 @@ function Contactos() {
 
   return (
     <div className="container-fluid py-4">
-
       {/* Título */}
       <header className="mb-4">
         <h1 className="h3 fw-bold mb-1">Usuarios</h1>
         <p className="text-muted mb-0">Agrega usuarios a tu trabajo.</p>
       </header>
 
-      {/* Buscador + Botón */}
+      {/* Buscador + botón */}
       <section className="d-flex justify-content-between align-items-center mb-4">
         <input
           type="text"
-          placeholder="Buscar contacto..."
+          placeholder="Buscar usuario..."
           className="form-control w-50"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
 
-        {/* Botón para abrir modal Agregar */}
-        <button
-          className="btn btn-dark"
-          onClick={() => setModalAgregar(true)}
-        >
+        <button className="btn btn-dark" onClick={() => setModalAgregar(true)}>
           + Usuario
         </button>
       </section>
@@ -118,8 +103,8 @@ function Contactos() {
               <thead className="table-light">
                 <tr>
                   <th>Nombre</th>
-                  <th>Correo Electronico</th>
-                  <th>Pais</th>
+                  <th>Correo</th>
+                  <th>País</th>
                   <th className="text-end">Acciones</th>
                 </tr>
               </thead>
@@ -128,22 +113,22 @@ function Contactos() {
                 {contactosFiltrados.length === 0 ? (
                   <tr>
                     <td colSpan="4" className="text-center py-4 text-muted">
-                      No se encontraron Contactos.
+                      No se encontraron usuarios.
                     </td>
                   </tr>
                 ) : (
                   contactosFiltrados.map((c, i) => (
                     <tr key={i}>
                       <td>{c.nombre}</td>
-                      <td>{c.canal}</td>
-                      <td>
-                        <span className={`badge bg-${c.badge}`}>
-                          {c.estado}
+                      <td>{c.correo}</td>
+                      <td className="">
+                        <span className="badge rounded-pill bg-success text-white px-3 py-2 fw-semibold">
+                          {c.pais}
                         </span>
                       </td>
 
                       <td className="text-end">
-                        {/* Botón VER */}
+                        {/* Ver */}
                         <button
                           className="btn btn-sm btn-outline-primary me-2"
                           onClick={() => {
@@ -154,7 +139,7 @@ function Contactos() {
                           Ver
                         </button>
 
-                        {/* Botón EDITAR */}
+                        {/* Editar */}
                         <button
                           className="btn btn-sm btn-outline-secondary me-2"
                           onClick={() => {
@@ -166,7 +151,7 @@ function Contactos() {
                           Editar
                         </button>
 
-                        {/* Botón ELIMINAR */}
+                        {/* Eliminar */}
                         <button
                           className="btn btn-sm btn-outline-danger"
                           onClick={() => {
@@ -181,23 +166,25 @@ function Contactos() {
                   ))
                 )}
               </tbody>
-
             </table>
           </div>
         </div>
       </div>
 
-      {/* --------------------------- */}
-      {/* MODAL: AGREGAR CONTACTO     */}
-      {/* --------------------------- */}
+      {/* MODAL AGREGAR */}
       {modalAgregar && (
-        <div className="modal fade show d-block" style={{ background: "#00000090" }}>
+        <div
+          className="modal fade show d-block"
+          style={{ background: "#00000090" }}
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content shadow">
-
               <div className="modal-header">
-                <h5 className="modal-title">Agregar nuevo contacto</h5>
-                <button className="btn-close" onClick={() => setModalAgregar(false)} />
+                <h5 className="modal-title">Agregar nuevo usuario</h5>
+                <button
+                  className="btn-close"
+                  onClick={() => setModalAgregar(false)}
+                />
               </div>
 
               <div className="modal-body">
@@ -207,92 +194,125 @@ function Contactos() {
                   className="form-control mb-3"
                   value={nuevoContacto.nombre}
                   onChange={(e) =>
-                    setNuevoContacto({ ...nuevoContacto, nombre: e.target.value })
+                    setNuevoContacto({
+                      ...nuevoContacto,
+                      nombre: e.target.value,
+                    })
                   }
                 />
 
-                <label className="form-label">Canal</label>
-                <select
-                  className="form-select mb-3"
-                  value={nuevoContacto.canal}
+                <label className="form-label">Correo electrónico</label>
+                <input
+                  type="email"
+                  className="form-control mb-3"
+                  value={nuevoContacto.correo}
                   onChange={(e) =>
-                    setNuevoContacto({ ...nuevoContacto, canal: e.target.value })
+                    setNuevoContacto({
+                      ...nuevoContacto,
+                      correo: e.target.value,
+                    })
                   }
-                >
-                  <option>WhatsApp</option>
-                  <option>Email</option>
-                  <option>Instagram</option>
-                </select>
+                />
 
-                <label className="form-label">Estado</label>
-                <select
-                  className="form-select"
-                  value={nuevoContacto.estado}
+                <label className="form-label">Contraseña</label>
+                <input
+                  type="password"
+                  className="form-control mb-3"
+                  value={nuevoContacto.contraseña}
                   onChange={(e) =>
-                    setNuevoContacto({ ...nuevoContacto, estado: e.target.value })
+                    setNuevoContacto({
+                      ...nuevoContacto,
+                      contraseña: e.target.value,
+                    })
                   }
-                >
-                  <option>Activo</option>
-                  <option>En seguimiento</option>
-                  <option>Pendiente</option>
-                </select>
+                />
+
+                <label className="form-label">País</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={nuevoContacto.pais}
+                  onChange={(e) =>
+                    setNuevoContacto({ ...nuevoContacto, pais: e.target.value })
+                  }
+                />
               </div>
 
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setModalAgregar(false)}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setModalAgregar(false)}
+                >
                   Cancelar
                 </button>
+
                 <button className="btn btn-dark" onClick={guardarNuevoContacto}>
-                  Guardar contacto
+                  Guardar Usuario
                 </button>
               </div>
-
             </div>
           </div>
         </div>
       )}
 
-      {/* --------------------------- */}
-      {/* MODAL: VER CONTACTO         */}
-      {/* --------------------------- */}
+      {/* MODAL VER */}
       {modalVer && contactoSeleccionado && (
-        <div className="modal fade show d-block" style={{ background: "#00000090" }}>
+        <div
+          className="modal fade show d-block"
+          style={{ background: "#00000090" }}
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
-
               <div className="modal-header">
-                <h5 className="modal-title">Información del contacto</h5>
-                <button className="btn-close" onClick={() => setModalVer(false)} />
+                <h5 className="modal-title">Información del usuario</h5>
+                <button
+                  className="btn-close"
+                  onClick={() => setModalVer(false)}
+                />
               </div>
 
               <div className="modal-body">
-                <p><strong>Nombre:</strong> {contactoSeleccionado.nombre}</p>
-                <p><strong>Canal:</strong> {contactoSeleccionado.canal}</p>
-                <p><strong>Estado:</strong> {contactoSeleccionado.estado}</p>
+                <p>
+                  <strong>Nombre:</strong> {contactoSeleccionado.nombre}
+                </p>
+                <p>
+                  <strong>Correo:</strong> {contactoSeleccionado.correo}
+                </p>
+                <p>
+                  <strong>Contraseña:</strong> {contactoSeleccionado.contraseña}
+                </p>
+                <p>
+                  <strong>País:</strong> {contactoSeleccionado.pais}
+                </p>
               </div>
 
               <div className="modal-footer">
-                <button className="btn btn-dark" onClick={() => setModalVer(false)}>
+                <button
+                  className="btn btn-dark"
+                  onClick={() => setModalVer(false)}
+                >
                   Cerrar
                 </button>
               </div>
-
             </div>
           </div>
         </div>
       )}
 
-      {/* --------------------------- */}
-      {/* MODAL: EDITAR CONTACTO      */}
-      {/* --------------------------- */}
+      {/* MODAL EDITAR */}
       {modalEditar && (
-        <div className="modal fade show d-block" style={{ background: "#00000090" }}>
+        <div
+          className="modal fade show d-block"
+          style={{ background: "#00000090" }}
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
-
               <div className="modal-header">
-                <h5 className="modal-title">Editar contacto</h5>
-                <button className="btn-close" onClick={() => setModalEditar(false)} />
+                <h5 className="modal-title">Editar usuario</h5>
+                <button
+                  className="btn-close"
+                  onClick={() => setModalEditar(false)}
+                />
               </div>
 
               <div className="modal-body">
@@ -302,39 +322,58 @@ function Contactos() {
                   className="form-control mb-3"
                   value={editarContacto.nombre}
                   onChange={(e) =>
-                    setEditarContacto({ ...editarContacto, nombre: e.target.value })
+                    setEditarContacto({
+                      ...editarContacto,
+                      nombre: e.target.value,
+                    })
                   }
                 />
 
-                <label className="form-label">Canal</label>
-                <select
-                  className="form-select mb-3"
-                  value={editarContacto.canal}
+                <label className="form-label">Correo</label>
+                <input
+                  type="email"
+                  className="form-control mb-3"
+                  value={editarContacto.correo}
                   onChange={(e) =>
-                    setEditarContacto({ ...editarContacto, canal: e.target.value })
+                    setEditarContacto({
+                      ...editarContacto,
+                      correo: e.target.value,
+                    })
                   }
-                >
-                  <option>WhatsApp</option>
-                  <option>Email</option>
-                  <option>Instagram</option>
-                </select>
+                />
 
-                <label className="form-label">Estado</label>
-                <select
-                  className="form-select"
-                  value={editarContacto.estado}
+                <label className="form-label">Contraseña</label>
+                <input
+                  type="password"
+                  className="form-control mb-3"
+                  value={editarContacto.contraseña}
                   onChange={(e) =>
-                    setEditarContacto({ ...editarContacto, estado: e.target.value })
+                    setEditarContacto({
+                      ...editarContacto,
+                      contraseña: e.target.value,
+                    })
                   }
-                >
-                  <option>Activo</option>
-                  <option>En seguimiento</option>
-                  <option>Pendiente</option>
-                </select>
+                />
+
+                <label className="form-label">País</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={editarContacto.pais}
+                  onChange={(e) =>
+                    setEditarContacto({
+                      ...editarContacto,
+                      pais: e.target.value,
+                    })
+                  }
+                />
               </div>
 
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setModalEditar(false)}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setModalEditar(false)}
+                >
                   Cancelar
                 </button>
 
@@ -342,32 +381,37 @@ function Contactos() {
                   Guardar cambios
                 </button>
               </div>
-
             </div>
           </div>
         </div>
       )}
 
-      {/* --------------------------- */}
-      {/* MODAL: ELIMINAR CONTACTO    */}
-      {/* --------------------------- */}
+      {/* MODAL ELIMINAR */}
       {modalEliminar && (
-        <div className="modal fade show d-block" style={{ background: "#00000090" }}>
+        <div
+          className="modal fade show d-block"
+          style={{ background: "#00000090" }}
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
-
               <div className="modal-header">
-                <h5 className="modal-title text-danger">Eliminar contacto</h5>
-                <button className="btn-close" onClick={() => setModalEliminar(false)} />
+                <h5 className="modal-title text-danger">Eliminar usuario</h5>
+                <button
+                  className="btn-close"
+                  onClick={() => setModalEliminar(false)}
+                />
               </div>
 
               <div className="modal-body">
-                ¿Seguro que querés eliminar a  
-                <strong> {contactoSeleccionado.nombre}</strong>?
+                ¿Seguro que querés eliminar a{" "}
+                <strong>{contactoSeleccionado.nombre}</strong>?
               </div>
 
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setModalEliminar(false)}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setModalEliminar(false)}
+                >
                   Cancelar
                 </button>
 
@@ -375,12 +419,10 @@ function Contactos() {
                   Eliminar
                 </button>
               </div>
-
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
