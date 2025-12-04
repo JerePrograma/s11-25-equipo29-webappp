@@ -2,7 +2,7 @@
 import React from "react";
 import { Outlet, NavLink } from "react-router-dom";
 
-function App() {
+function App() {  
   return (
     <div className="d-flex min-vh-100 bg-light">
       <aside
@@ -55,18 +55,6 @@ function App() {
             <span>Mensajes</span>
           </NavLink>
 
-          {/* Configuración */}
-          <NavLink
-            to="/configuracion"
-            className={({ isActive }) =>
-              isActive
-                ? "btn btn-dark text-start d-flex align-items-center gap-2 sidebar-btn"
-                : "btn btn-outline-secondary text-start d-flex align-items-center gap-2 sidebar-btn"
-            }
-          >
-            <span className="fw-bold">⚙</span>
-            <span>Configuración</span>
-          </NavLink>
 
           {/* Usuarios */}
           <NavLink

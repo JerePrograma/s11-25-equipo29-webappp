@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 
-function sidebar() {
+function Sidebar() {
   return (
     <aside
       className="d-none d-md-block bg-light border-end vh-100 p-3"
@@ -46,13 +46,14 @@ function sidebar() {
           ✅ Tareas
         </NavLink>
 
+        {/* ⭐ NUEVO: LEADS - con el mismo estilo que los otros */}
         <NavLink
-          to="/settings"
+          to="/leads"
           className={({ isActive }) =>
             `nav-link ${isActive ? "active fw-bold text-primary" : "text-dark"}`
           }
         >
-          ⚙️ Configuración
+          🧲 Leads
         </NavLink>
       </nav>
 
@@ -69,12 +70,14 @@ function sidebar() {
           aria-valuemin="0"
           aria-valuemax="100"
         >
-          <div className="progress-bar bg-primary" style={{ width: "72%" }}></div>
+          <div
+            className="progress-bar bg-primary"
+            style={{ width: "72%" }}
+          ></div>
         </div>
       </div>
     </aside>
   );
 }
 
-export default sidebar;
-
+export default Sidebar;
