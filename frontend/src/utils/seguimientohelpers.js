@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Your Company Name
  * All rights reserved.
  */
-// src/utils/seguimientoHelpers.js
+// src/utils/seguimientohelpers.js
 
 function normalizarFechaHoy() {
     const hoy = new Date();

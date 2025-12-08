@@ -1,53 +1,74 @@
-// src/context/taskcontext.jsx
-import React, { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const TaskContext = createContext();
 
-export function TaskProvider({ children }) {
-  const [tareas, setTareas] = useState([
-    // Ejemplos iniciales
-    {
-      id: 1,
-      titulo: "Llamar a María sobre presupuesto",
-      descripcion: "Confirmar si recibió la propuesta y si tiene dudas.",
-      contacto: "María Gómez",
-      canal: "WhatsApp",
-      tipo: "Llamada",
-      vencimiento: "2025-12-05T15:00",
-      estado: "Pendiente", // Pendiente | Completada
-      creadaEn: "2025-12-03T12:00",
-    },
-  ]);
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-  const crearTarea = (nuevaTarea) => {
-    const tareaConId = {
-      ...nuevaTarea,
+export function TaskProvider({ children }) {
+  const [tareas, setTareas] = useState([]);
+
+  // ⭐ Cargar tareas (pero sin backend no crashea)
+  useEffect(() => {
+    async function cargar() {
+      try {
+        // Si NO hay backend → devolvemos []
+        if (!API_URL) {
+          console.warn("⚠️ No hay backend → usando []");
+          setTareas([]);
+          return;
+        }
+
+        const res = await fetch(`${API_URL}/tareas`);
+        if (!res.ok) throw new Error("No hay backend todavía");
+
+        const data = await res.json();
+        setTareas(data);
+      } catch (err) {
+        console.warn("⚠️ Backend no disponible → usando []");
+        setTareas([]); // 💎 ACÁ ES DONDE ENGAÑAMOS
+      }
+    }
+
+    cargar();
+  }, []);
+
+  // ⭐ Crear tarea (guarda solo en memoria)
+  const crearTarea = (tarea) => {
+    const nueva = {
+      ...tarea,
       id: Date.now(),
-      estado: "Pendiente",
+      completada: false,
       creadaEn: new Date().toISOString(),
     };
-    setTareas((prev) => [...prev, tareaConId]);
+
+    setTareas((prev) => [...prev, nueva]); // en memoria
   };
 
   const completarTarea = (id) => {
     setTareas((prev) =>
       prev.map((t) =>
-        t.id === id ? { ...t, estado: "Completada" } : t
+        t.id === id ? { ...t, completada: true } : t
+      )
+    );
+  };
+
+  const actualizarTarea = (id, datos) => {
+    setTareas((prev) =>
+      prev.map((t) =>
+        t.id === id ? { ...t, ...datos } : t
       )
     );
   };
 
   return (
-    <TaskContext.Provider value={{ tareas, crearTarea, completarTarea }}>
+    <TaskContext.Provider
+      value={{ tareas, crearTarea, completarTarea, actualizarTarea }}
+    >
       {children}
     </TaskContext.Provider>
   );
 }
 
 export function useTasks() {
-  const ctx = useContext(TaskContext);
-  if (!ctx) {
-    throw new Error("useTasks debe usarse dentro de <TaskProvider>");
-  }
-  return ctx;
+  return useContext(TaskContext);
 }

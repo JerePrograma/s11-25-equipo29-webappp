@@ -1,47 +1,61 @@
 // src/pages/Leads.jsx
-import React, { useState, useMemo } from "react";
-import { useLeads } from "../context/leadcontext.jsx";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useConfig } from "../context/configcontext.jsx";
 
-function Leads() {
-  const { leads } = useLeads();
+export default function Leads() {
+  const { API_BASE_URL, etapas } = useConfig();
 
+  const [leads, setLeads] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("Todos");
 
-  // Estados reales del funnel
-  const estadosPosibles = [
-    "Nuevo lead",
-    "Contacto inicial",
-    "En seguimiento",
-  ];
+  // ---------------------------------------
+  // FETCH REAL
+  // ---------------------------------------
+  useEffect(() => {
+    async function cargar() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/leads`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setLeads(data);
+      } catch {
+        console.warn("⚠ No hay backend → leads vacíos");
+        setLeads([]);
+      }
+    }
+    cargar();
+  }, [API_BASE_URL]);
 
-  // Mapeo unificado igual al de Contactos
-  const estadoBadgeMap = {
-    "Nuevo lead": "badge bg-info",                   // celeste
-    "Contacto inicial": "badge bg-success",          // verde
-    "En seguimiento": "badge bg-warning text-dark",  // amarillo
-
-    "Lead activo": "badge bg-success",               // verde
-    "Cliente": "badge bg-dark",                      // negro
+  // ---------------------------------------
+  // BADGES SEGÚN ETAPA
+  // ---------------------------------------
+  const badgeEtapa = {
+    "Nuevo lead": "primary",
+    "Contacto inicial": "info",
+    "En seguimiento": "warning text-dark",
+    "Respuesta pendiente": "danger",
+    "Cliente": "success",
   };
 
-  // Filtro de leads
+  // ---------------------------------------
+  // FILTRO DE LEADS
+  // ---------------------------------------
   const leadsFiltrados = useMemo(() => {
-    if (!leads) return [];
-
     return leads
       .filter((lead) =>
         lead.nombre?.toLowerCase().includes(busqueda.toLowerCase())
       )
       .filter((lead) =>
-        estadoFiltro === "Todos" ? true : lead.estado === estadoFiltro
+        estadoFiltro === "Todos" ? true : lead.etapa === estadoFiltro
       );
   }, [leads, busqueda, estadoFiltro]);
 
   return (
     <div className="container-fluid">
-      {/* Header */}
+
+      {/* HEADER */}
       <header className="mb-4 d-flex justify-content-between align-items-center">
         <div>
           <h1 className="h3 fw-bold mb-1">Leads</h1>
@@ -55,7 +69,7 @@ function Leads() {
         </Link>
       </header>
 
-      {/* Filtros */}
+      {/* FILTROS */}
       <section className="row g-3 mb-4">
         <div className="col-12 col-md-6 col-lg-4">
           <label className="form-label small">Buscar por nombre</label>
@@ -69,23 +83,23 @@ function Leads() {
         </div>
 
         <div className="col-12 col-md-6 col-lg-4">
-          <label className="form-label small">Filtrar por estado</label>
+          <label className="form-label small">Filtrar por etapa</label>
           <select
             className="form-select"
             value={estadoFiltro}
             onChange={(e) => setEstadoFiltro(e.target.value)}
           >
-            <option value="Todos">Todos los estados</option>
-            {estadosPosibles.map((estado) => (
-              <option key={estado} value={estado}>
-                {estado}
+            <option value="Todos">Todas</option>
+            {etapas.map((et) => (
+              <option key={et} value={et}>
+                {et}
               </option>
             ))}
           </select>
         </div>
       </section>
 
-      {/* Tabla */}
+      {/* TABLA */}
       <section className="card shadow-sm border-0">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-3">
@@ -102,11 +116,12 @@ function Leads() {
                   <tr>
                     <th>Nombre</th>
                     <th>Canal</th>
-                    <th>Estado</th>
+                    <th>Etapa</th>
                     <th>Tipo</th>
                     <th>Último contacto</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {leadsFiltrados.map((lead) => (
                     <tr key={lead.id}>
@@ -114,13 +129,8 @@ function Leads() {
                       <td>{lead.canal}</td>
 
                       <td>
-                        <span
-                          className={
-                            estadoBadgeMap[lead.estado] ||
-                            "badge bg-secondary"
-                          }
-                        >
-                          {lead.estado}
+                        <span className={`badge bg-${badgeEtapa[lead.etapa] || "secondary"}`}>
+                          {lead.etapa}
                         </span>
                       </td>
 
@@ -148,5 +158,3 @@ function Leads() {
     </div>
   );
 }
-
-export default Leads;

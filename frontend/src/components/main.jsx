@@ -18,6 +18,15 @@ function Main() {
           <Link to="/contactos" className="btn btn-outline-primary btn-lg">
             Ver Contactos
           </Link>
+          <Route
+         path="about"
+        element={
+          <ProtectedRoute roles={["admin", "vendedor", "externo"]}>
+            <About />
+          </ProtectedRoute>
+        }
+      />
+
         </div>
 
         <div className="col-md-6 text-center">

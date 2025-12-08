@@ -1,22 +1,47 @@
-import React from "react";
-import { Outlet, Link } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/authcontext.jsx";
 
 const Login = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!email || password.length < 3) {
+      alert("Completa email y contraseña (mínimo 3 caracteres)");
+      return;
+    }
+
+    login({
+      email,
+      nombre: email.split("@")[0]
+    });
+
+    navigate("/");
+  };
+
   return (
     <div className="container d-flex justify-content-center mt-5">
-      <section className="p-4  rounded" style={{ width: "420px" }}>
+      <section className="p-4 rounded" style={{ width: "420px" }}>
         <h2 className="fw-bold mb-1">Startup CRM</h2>
         <p className="text-muted mb-4">Inicia sesión en tu cuenta</p>
 
         <hr />
 
-        <form>
+        <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label className="form-label">Email</label>
             <input
               type="email"
               className="form-control"
-              placeholder="tu@email.com"
+              placeholder="admin@crm.com / vendedor@crm.com / cualquiera externo"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
@@ -25,6 +50,8 @@ const Login = () => {
             <input
               type="password"
               className="form-control"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
@@ -34,20 +61,6 @@ const Login = () => {
         </form>
 
         <hr className="mt-4" />
-
-        <p className="text-center text-muted" style={{ fontSize: "0.9rem" }}>
-          Demo: usa cualquier email y contraseña (mín 6 caracteres)
-        </p>
-
-        <p className="text-center mt-2">
-          ¿No tienes cuenta?{" "}
-          <a href="#" className="text-primary">
-            <Link to='/register'>
-            Regístrate aquí
-            </Link>
-            
-          </a>
-        </p>
       </section>
     </div>
   );
