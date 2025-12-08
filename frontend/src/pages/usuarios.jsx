@@ -1,30 +1,22 @@
-// src/pages/Contactos.jsx
+// src/pages/usuarios.jsx
 import React, { useState } from "react";
+import { useAuth } from "../context/authcontext.jsx";
 
-function Contactos() {
+function Usuarios() {
+  const { user } = useAuth();
+  const esAdmin = user?.role === "admin";
+
   const [busqueda, setBusqueda] = useState("");
 
   const [contactos, setContactos] = useState([
-    {
-      nombre: "María Gómez",
-      correo: "WhatsApp@gmail.com",
-      contraseña: "1234567",
-      pais: "España",
-    },
-    {
-      nombre: "Juan Pérez",
-      correo: "juan@gmail.com",
-      contraseña: "abcdef",
-      pais: "México",
-    },
+    { nombre: "María Gómez", correo: "WhatsApp@gmail.com", contraseña: "1234567", pais: "España", role: "vendedor" },
+    { nombre: "Juan Pérez", correo: "juan@gmail.com", contraseña: "abcdef", pais: "México", role: "externo" },
   ]);
 
   const [modalAgregar, setModalAgregar] = useState(false);
-  const [modalVer, setModalVer] = useState(false);
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
 
-  // 👁 Estados para ver/ocultar contraseñas
   const [verPassAgregar, setVerPassAgregar] = useState(false);
   const [verPassEditar, setVerPassEditar] = useState(false);
 
@@ -35,6 +27,7 @@ function Contactos() {
     correo: "",
     contraseña: "",
     pais: "",
+    role: "vendedor",
   });
 
   const [editarContacto, setEditarContacto] = useState({
@@ -42,6 +35,7 @@ function Contactos() {
     correo: "",
     contraseña: "",
     pais: "",
+    role: "vendedor",
   });
 
   const contactosFiltrados = contactos.filter((c) =>
@@ -50,15 +44,13 @@ function Contactos() {
 
   const guardarNuevoContacto = () => {
     setContactos([...contactos, nuevoContacto]);
-    setNuevoContacto({ nombre: "", correo: "", contraseña: "", pais: "" });
+    setNuevoContacto({ nombre: "", correo: "", contraseña: "", pais: "", role: "vendedor" });
     setVerPassAgregar(false);
     setModalAgregar(false);
   };
 
   const guardarEdicion = () => {
-    setContactos(
-      contactos.map((c) => (c === contactoSeleccionado ? editarContacto : c))
-    );
+    setContactos(contactos.map((c) => (c === contactoSeleccionado ? editarContacto : c)));
     setVerPassEditar(false);
     setModalEditar(false);
   };
@@ -69,77 +61,81 @@ function Contactos() {
   };
 
   return (
-    <div className="container-fluid py-4">
+    <div className="container-fluid py-4 animate__animated animate__fadeIn">
+
+      {/* HEADER */}
       <header className="mb-4">
-        <h1 className="h3 fw-bold mb-1">Usuarios</h1>
-        <p className="text-muted mb-0">Agrega usuarios a tu trabajo.</p>
+        <h1 className="h3 fw-bold">Usuarios del sistema</h1>
+        <p className="text-muted">Administra vendedores, externos y administradores.</p>
       </header>
 
-      <section className="d-flex justify-content-between align-items-center mb-4">
+      {/* BUSCADOR + BOTÓN */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <input
           type="text"
           placeholder="Buscar usuario..."
-          className="form-control w-50"
+          className="form-control w-50 shadow-sm"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
 
-        <button className="btn btn-dark" onClick={() => setModalAgregar(true)}>
-          + Usuario
-        </button>
-      </section>
+        {esAdmin && (
+          <button className="btn btn-dark shadow-sm" onClick={() => setModalAgregar(true)}>
+            <i className="bi bi-person-plus me-2"></i>
+            Nuevo Usuario
+          </button>
+        )}
+      </div>
 
-      <div className="card shadow-sm border-0">
+      {/* TABLA */}
+      <div className="card border-0 shadow-sm">
         <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table align-middle mb-0">
-              <thead className="table-light">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>País</th>
+                {esAdmin && <th className="text-end">Acciones</th>}
+              </tr>
+            </thead>
+
+            <tbody>
+              {contactosFiltrados.length === 0 ? (
                 <tr>
-                  <th>Nombre</th>
-                  <th>Correo</th>
-                  <th>País</th>
-                  <th className="text-end">Acciones</th>
+                  <td colSpan="5" className="text-center py-4 text-muted">
+                    <i className="bi bi-search"></i> No se encontraron usuarios.
+                  </td>
                 </tr>
-              </thead>
+              ) : (
+                contactosFiltrados.map((c, i) => (
+                  <tr key={i}>
+                    <td>{c.nombre}</td>
+                    <td>{c.correo}</td>
 
-              <tbody>
-                {contactosFiltrados.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="text-center py-4 text-muted">
-                      No se encontraron usuarios.
+                    <td>
+                      <span className="badge bg-info text-dark fw-semibold px-3 py-2">
+                        {c.role}
+                      </span>
                     </td>
-                  </tr>
-                ) : (
-                  contactosFiltrados.map((c, i) => (
-                    <tr key={i}>
-                      <td>{c.nombre}</td>
-                      <td>{c.correo}</td>
-                      <td>
-                        <span className="badge rounded-pill bg-success text-white px-3 py-2 fw-semibold">
-                          {c.pais}
-                        </span>
-                      </td>
 
+                    <td>
+                      <span className="badge bg-success rounded-pill fw-semibold px-3 py-2">
+                        {c.pais}
+                      </span>
+                    </td>
+
+                    {esAdmin && (
                       <td className="text-end">
                         <button
                           className="btn btn-sm btn-outline-primary me-2"
                           onClick={() => {
                             setContactoSeleccionado(c);
-                            setModalVer(true);
-                          }}
-                        >
-                          Ver
-                        </button>
-
-                        <button
-                          className="btn btn-sm btn-outline-secondary me-2"
-                          onClick={() => {
-                            setContactoSeleccionado(c);
-                            setEditarContacto(c);
                             setModalEditar(true);
                           }}
                         >
-                          Editar
+                          <i className="bi bi-pencil"></i>
                         </button>
 
                         <button
@@ -149,303 +145,83 @@ function Contactos() {
                             setModalEliminar(true);
                           }}
                         >
-                          Eliminar
+                          <i className="bi bi-trash"></i>
                         </button>
                       </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* ============================
-          MODAL AGREGAR
-      ============================ */}
+      {/* ============================ MODAL AGREGAR ============================ */}
       {modalAgregar && (
-        <div
-          className="modal fade show d-block"
-          style={{ background: "#00000090" }}
-        >
+        <div className="modal fade show d-block" style={{ background: "#00000090" }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content shadow">
-              <div className="modal-header">
-                <h5 className="modal-title">Agregar nuevo usuario</h5>
-                <button
-                  className="btn-close"
-                  onClick={() => setModalAgregar(false)}
-                />
+              
+              <div className="modal-header bg-dark text-white">
+                <h5 className="modal-title">Agregar usuario</h5>
+                <button className="btn-close btn-close-white" onClick={() => setModalAgregar(false)}></button>
               </div>
 
               <div className="modal-body">
-                <label className="form-label">Nombre</label>
-                <input
-                  type="text"
-                  className="form-control mb-3"
+
+                <label className="form-label fw-semibold">Nombre</label>
+                <input type="text" className="form-control mb-3 shadow-sm"
                   value={nuevoContacto.nombre}
-                  onChange={(e) =>
-                    setNuevoContacto({
-                      ...nuevoContacto,
-                      nombre: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setNuevoContacto({ ...nuevoContacto, nombre: e.target.value })}
                 />
 
-                <label className="form-label">Correo electrónico</label>
-                <input
-                  type="email"
-                  className="form-control mb-3"
+                <label className="form-label fw-semibold">Correo electrónico</label>
+                <input type="email" className="form-control mb-3 shadow-sm"
                   value={nuevoContacto.correo}
-                  onChange={(e) =>
-                    setNuevoContacto({
-                      ...nuevoContacto,
-                      correo: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setNuevoContacto({ ...nuevoContacto, correo: e.target.value })}
                 />
 
-                <label className="form-label">Contraseña</label>
-                <div className="input-group mb-3">
-                  <input
-                    type={verPassAgregar ? "text" : "password"}
-                    className="form-control"
-                    value={nuevoContacto.contraseña}
-                    onChange={(e) =>
-                      setNuevoContacto({
-                        ...nuevoContacto,
-                        contraseña: e.target.value,
-                      })
-                    }
-                  />
-                  <button
-                    className="btn btn-outline-secondary"
-                    type="button"
-                    style={{ width: "90px" }} // ← ancho fijo
-                    onClick={() => setVerPassAgregar(!verPassAgregar)}
-                  >
-                    {verPassAgregar ? "Ocultar" : "Ver"}
-                  </button>
-                </div>
+                <label className="form-label fw-semibold">Contraseña</label>
+                <input type="password" className="form-control mb-3 shadow-sm"
+                  value={nuevoContacto.contraseña}
+                  onChange={(e) => setNuevoContacto({ ...nuevoContacto, contraseña: e.target.value })}
+                />
 
-                <label className="form-label">País</label>
-                <input
-                  type="text"
-                  className="form-control"
+                <label className="form-label fw-semibold">País</label>
+                <input type="text" className="form-control mb-3 shadow-sm"
                   value={nuevoContacto.pais}
-                  onChange={(e) =>
-                    setNuevoContacto({
-                      ...nuevoContacto,
-                      pais: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setNuevoContacto({ ...nuevoContacto, pais: e.target.value })}
                 />
+
+                <label className="form-label fw-semibold">Rol</label>
+                <select className="form-select shadow-sm"
+                  value={nuevoContacto.role}
+                  onChange={(e) => setNuevoContacto({ ...nuevoContacto, role: e.target.value })}
+                >
+                  <option value="admin">Administrador</option>
+                  <option value="vendedor">Vendedor</option>
+                  <option value="externo">Externo</option>
+                </select>
               </div>
 
               <div className="modal-footer">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setModalAgregar(false)}
-                >
+                <button className="btn btn-secondary" onClick={() => setModalAgregar(false)}>
                   Cancelar
                 </button>
 
                 <button className="btn btn-dark" onClick={guardarNuevoContacto}>
-                  Guardar Usuario
+                  Guardar usuario
                 </button>
               </div>
+
             </div>
           </div>
         </div>
       )}
 
-      {/* ============================
-          MODAL VER
-      ============================ */}
-      {modalVer && contactoSeleccionado && (
-        <div
-          className="modal fade show d-block"
-          style={{ background: "#00000090" }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Información del usuario</h5>
-                <button
-                  className="btn-close"
-                  onClick={() => setModalVer(false)}
-                />
-              </div>
-
-              <div className="modal-body">
-                <p>
-                  <strong>Nombre:</strong> {contactoSeleccionado.nombre}
-                </p>
-                <p>
-                  <strong>Correo:</strong> {contactoSeleccionado.correo}
-                </p>
-                <p>
-                  <strong>Contraseña:</strong> {contactoSeleccionado.contraseña}
-                </p>
-                <p>
-                  <strong>País:</strong> {contactoSeleccionado.pais}
-                </p>
-              </div>
-
-              <div className="modal-footer">
-                <button
-                  className="btn btn-dark"
-                  onClick={() => setModalVer(false)}
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ============================
-          MODAL EDITAR
-      ============================ */}
-      {modalEditar && (
-        <div
-          className="modal fade show d-block"
-          style={{ background: "#00000090" }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Editar usuario</h5>
-                <button
-                  className="btn-close"
-                  onClick={() => setModalEditar(false)}
-                />
-              </div>
-
-              <div className="modal-body">
-                <label className="form-label">Nombre</label>
-                <input
-                  type="text"
-                  className="form-control mb-3"
-                  value={editarContacto.nombre}
-                  onChange={(e) =>
-                    setEditarContacto({
-                      ...editarContacto,
-                      nombre: e.target.value,
-                    })
-                  }
-                />
-
-                <label className="form-label">Correo</label>
-                <input
-                  type="email"
-                  className="form-control mb-3"
-                  value={editarContacto.correo}
-                  onChange={(e) =>
-                    setEditarContacto({
-                      ...editarContacto,
-                      correo: e.target.value,
-                    })
-                  }
-                />
-
-                <label className="form-label">Contraseña</label>
-                <div className="input-group mb-3">
-                  <input
-                    type={verPassEditar ? "text" : "password"}
-                    className="form-control"
-                    value={editarContacto.contraseña}
-                    onChange={(e) =>
-                      setEditarContacto({
-                        ...editarContacto,
-                        contraseña: e.target.value,
-                      })
-                    }
-                  />
-                  <button
-                    className="btn btn-outline-secondary"
-                    type="button"
-                    style={{ width: "90px" }} // ← ancho fijo
-                    onClick={() => setVerPassEditar(!verPassEditar)}
-                  >
-                    {verPassEditar ? "Ocultar" : "Ver"}
-                  </button>
-                </div>
-
-                <label className="form-label">País</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={editarContacto.pais}
-                  onChange={(e) =>
-                    setEditarContacto({
-                      ...editarContacto,
-                      pais: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="modal-footer">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setModalEditar(false)}
-                >
-                  Cancelar
-                </button>
-
-                <button className="btn btn-dark" onClick={guardarEdicion}>
-                  Guardar cambios
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ============================
-          MODAL ELIMINAR
-      ============================ */}
-      {modalEliminar && (
-        <div
-          className="modal fade show d-block"
-          style={{ background: "#00000090" }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title text-danger">Eliminar usuario</h5>
-                <button
-                  className="btn-close"
-                  onClick={() => setModalEliminar(false)}
-                />
-              </div>
-
-              <div className="modal-body">
-                ¿Seguro que querés eliminar a{" "}
-                <strong>{contactoSeleccionado.nombre}</strong>?
-              </div>
-
-              <div className="modal-footer">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setModalEliminar(false)}
-                >
-                  Cancelar
-                </button>
-
-                <button className="btn btn-danger" onClick={eliminarContacto}>
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-export default Contactos;
+export default Usuarios;

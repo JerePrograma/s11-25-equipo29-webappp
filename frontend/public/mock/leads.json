@@ -1,0 +1,21 @@
+[
+    {
+      "id": 1,
+      "nombre": "Juan Pérez",
+      "canal": "WhatsApp",
+      "etapa": "Nuevo lead",
+      "tipoContacto": "Lead",
+      "estadoCalor": "Lead tibio",
+      "ultima": "Ayer"
+    },
+    {
+      "id": 2,
+      "nombre": "Ana Gómez",
+      "canal": "Instagram",
+      "etapa": "En seguimiento",
+      "tipoContacto": "Cliente",
+      "estadoCalor": "Lead caliente",
+      "ultima": "Hace 2 horas"
+    }
+  ]
+  

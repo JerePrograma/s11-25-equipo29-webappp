@@ -1,0 +1,15 @@
+[
+    {
+      "id": 1,
+      "nombre": "Administrador",
+      "email": "admin@crm.com",
+      "role": "admin"
+    },
+    {
+      "id": 2,
+      "nombre": "Vendedor Demo",
+      "email": "vendedor@crm.com",
+      "role": "vendedor"
+    }
+  ]
+  

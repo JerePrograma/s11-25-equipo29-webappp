@@ -1,0 +1,51 @@
+{
+  "canales": [
+    "WhatsApp",
+    "Email",
+    "Instagram"
+  ],
+
+  "etapas": [
+    "Nuevo lead",
+    "Contacto inicial",
+    "En seguimiento",
+    "Respuesta pendiente",
+    "Cliente"
+  ],
+
+  "tiposContacto": [
+    "Lead",
+    "Cliente"
+  ],
+
+  "estadosCalor": [
+    "Lead frío",
+    "Lead tibio",
+    "Lead caliente"
+  ],
+
+  "columnasDisponibles": [
+    "titulo",
+    "descripcion",
+    "estado",
+    "contacto",
+    "canal",
+    "vencimiento",
+    "creadaEn"
+  ],
+
+  "etiquetas": [
+    { "id": 1, "nombre": "Urgente" },
+    { "id": 2, "nombre": "Seguimiento" },
+    { "id": 3, "nombre": "Baja prioridad" }
+  ],
+
+  "vistas": [
+    {
+      "id": 1,
+      "nombre": "Tareas para hoy",
+      "filtros": { "fecha": "hoy" },
+      "columnas": ["titulo", "estado", "vencimiento"]
+    }
+  ]
+}

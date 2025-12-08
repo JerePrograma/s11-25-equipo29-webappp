@@ -1,4 +1,4 @@
-// src/pages/Contactos.jsx
+// src/pages/Contactos.jsx//-****//
 import React, { useState } from "react";
 import { useLeads } from "../context/leadcontext";
 import { useNavigate } from "react-router-dom";
@@ -555,6 +555,14 @@ function Contactos() {
                   onClick={() => setModalEliminar(false)}
                 />
               </div>
+              const { user } = useAuth();
+
+{user.role === "vendedor" && (
+  <>
+    <button className="btn btn-warning">Editar</button>
+    <button className="btn btn-danger ms-2">Eliminar</button>
+  </>
+)}
 
               <div className="modal-body">
                 ¿Seguro que querés eliminar a{" "}
@@ -580,4 +588,4 @@ function Contactos() {
   );
 }
 
-export default Contactos;
+export default Contactos;//
