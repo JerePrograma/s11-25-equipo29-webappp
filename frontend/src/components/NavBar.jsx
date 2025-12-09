@@ -1,32 +1,41 @@
-// src/components/NavBar.jsx
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 
 export default function NavBar() {
   return (
-    <nav className="navbar navbar-expand-lg bg-body-tertiary">
+    <nav className="navbar navbar-expand-lg bg-body-tertiary border-bottom">
       <div className="container">
-        <Link className="navbar-brand" to="/">CRM Grupo 29</Link>
+        <Link className="navbar-brand fw-bold" to="/">
+          CRM Grupo 29
+        </Link>
 
         <button
           className="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
-          data-bs-target="#nav"
-          aria-controls="nav"
+          data-bs-target="#mainNav"
+          aria-controls="mainNav"
           aria-expanded="false"
           aria-label="Toggle navigation"
         >
-          <span className="navbar-toggler-icon"></span>
+          <span className="navbar-toggler-icon" />
         </button>
 
-        <div id="nav" className="collapse navbar-collapse">
+        <div id="mainNav" className="collapse navbar-collapse">
           <ul className="navbar-nav ms-auto">
-            <li className="nav-item"><Link className="nav-link" to="/">Inicio</Link></li>
+            <li className="nav-item">
+              <NavLink end className="nav-link" to="/">
+                Inicio
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className="nav-link" to="/about">
+                Sobre nosotros
+              </NavLink>
+            </li>
           </ul>
         </div>
       </div>
     </nav>
   );
 }
-    

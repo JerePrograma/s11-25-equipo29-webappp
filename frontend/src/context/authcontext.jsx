@@ -1,88 +1,82 @@
 // src/context/authcontext.jsx
 import { createContext, useContext, useState, useEffect } from "react";
+import { listUsuarios } from "../api/usuarioApi.js";
 
-const AuthContext = createContext();
+/**
+ * AuthContext:
+ * - NO hace el login HTTP (eso lo hace Login.jsx + authApi.login).
+ * - Recibe email/nombre ya autenticado y resuelve el usuario real contra /api/usuarios.
+ * - Guarda { id, nombre, email, role, logged } en localStorage.
+ */
 
-// 🌐 URL BASE del backend real (si existe)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-// Endpoint real del login
-const LOGIN_API_URL = `${API_BASE_URL}/api/login`;
+const AuthContext = createContext(null);
+const STORAGE_KEY = "startupcrm_user";
 
 export function AuthProvider({ children }) {
-  // ---------------------------------------
-  // ESTADO DE USUARIO (persistente)
-  // ---------------------------------------
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("user");
+    const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : null;
   });
 
-  // Guardar / limpiar sesión en localStorage
+  // Persistencia en localStorage
   useEffect(() => {
-    if (user) localStorage.setItem("user", JSON.stringify(user));
-    else localStorage.removeItem("user");
+    if (user) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
   }, [user]);
 
-  // ---------------------------------------
-  // ⭐ LOGIN REAL — CON FALLBACK SEGURO
-  // ---------------------------------------
+  /**
+   * login({ email, nombre })
+   * Se llama DESPUÉS de un login exitoso contra /api/login.
+   * Usa /api/usuarios para mapear email → UsuarioResponse (id, rol, etc.).
+   */
   const login = async ({ email, nombre }) => {
-    const normalizado = email?.trim().toLowerCase();
+    const normalizado = (email || "").trim().toLowerCase();
     if (!normalizado) return;
 
     try {
-      // Si no hay backend definido, no intentamos llamar
-      if (!API_BASE_URL) {
-        console.warn("⚠️ No hay backend → Login externo temporal");
+      const usuarios = await listUsuarios();
+      const encontrado = usuarios.find(
+        (u) => (u.email || "").toLowerCase() === normalizado
+      );
+
+      if (encontrado) {
         setUser({
-          nombre: nombre ?? "Visitante",
-          email: normalizado,
-          role: "externo",
+          id: encontrado.id,
+          nombre: encontrado.nombre,
+          email: encontrado.email,
+          role: (encontrado.rolNombre || "").toLowerCase(), // "admin", "vendedor", etc.
           logged: true,
         });
         return;
       }
-
-      const res = await fetch(LOGIN_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: normalizado }),
-      });
-
-      if (!res.ok) throw new Error("No se pudo iniciar sesión");
-
-      const data = await res.json();
-
-      // Espera formato backend:
-      // { nombre, email, role }
-      setUser({
-        nombre: data.nombre ?? nombre ?? "Usuario",
-        email: data.email ?? normalizado,
-        role: data.role ?? "externo",
-        logged: true,
-      });
-
     } catch (err) {
-      console.warn("⚠️ Backend no disponible → Login externo");
-
-      // Fallback suave para no romper el CRM
-      setUser({
-        nombre: nombre ?? "Visitante",
-        email: normalizado,
-        role: "externo",
-        logged: true,
-      });
+      console.warn(
+        "No se pudo obtener el usuario desde backend. Fallback a usuario externo.",
+        err
+      );
     }
+
+    // Fallback: visitante/externo
+    setUser({
+      id: null,
+      nombre: nombre || normalizado.split("@")[0] || "Usuario",
+      email: normalizado,
+      role: "externo",
+      logged: true,
+    });
   };
 
-  // ---------------------------------------
-  // LOGOUT
-  // ---------------------------------------
-  const logout = () => setUser(null);
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, API_BASE_URL }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,17 +1,25 @@
 // src/context/configcontext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-const ConfigContext = createContext();
+const ConfigContext = createContext(null);
 
-// 🌐 URL real (cuando exista backend)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+/**
+ * ConfigProvider:
+ * - Configuración de UI (canales, etapas, tipos de contacto, etc.).
+ * - Usa localStorage para columnas, etiquetas y vistas.
+ * - No llama a backend por ahora (no hay /api/config en tu backend).
+ */
 
 export function ConfigProvider({ children }) {
   // CONTACTOS CRM
   const [canales, setCanales] = useState([]);
   const [etapas, setEtapas] = useState([]);
-  const [tiposContacto, setTiposContacto] = useState([]);
-  const [estadosCalor, setEstadosCalor] = useState([]);
+  const [tiposContacto] = useState(["lead", "cliente"]);
+  const [estadosCalor] = useState([
+    "Lead frío",
+    "Lead tibio",
+    "Lead caliente",
+  ]);
 
   // SISTEMA GLOBAL
   const [columnasDisponibles, setColumnasDisponibles] = useState([]);
@@ -19,78 +27,41 @@ export function ConfigProvider({ children }) {
   const [etiquetas, setEtiquetas] = useState([]);
   const [vistas, setVistas] = useState([]);
 
-  // --------------------------------------------------------------------------------
-  // ⭐ CARGAR CONFIGURACIÓN — intenta backend / si falla, usa defaults
-  // --------------------------------------------------------------------------------
+  // --------------------------------------
+  // Carga inicial (defaults + localStorage)
+  // --------------------------------------
   useEffect(() => {
-    async function loadConfig() {
-      try {
-        if (!API_BASE_URL) throw new Error("Backend no configurado");
+    // Defaults
+    setCanales(["WhatsApp", "Email", "Instagram"]);
+    setEtapas(["Nuevo lead", "Contacto inicial", "En seguimiento", "Cliente"]);
+    setColumnasDisponibles([
+      "nombre",
+      "email",
+      "telefono",
+      "estadoGeneral",
+      "origen",
+      "propietarioNombre",
+      "ultimoContactoEn",
+    ]);
 
-        const res = await fetch(`${API_BASE_URL}/api/config`);
-        if (!res.ok) throw new Error("Backend no disponible");
+    // Columnas globales
+    const savedColumnas = localStorage.getItem("columnasGlobales");
+    setColumnasGlobales(
+      savedColumnas
+        ? JSON.parse(savedColumnas)
+        : ["nombre", "email", "telefono", "estadoGeneral"]
+    );
 
-        const data = await res.json();
+    // Etiquetas
+    const savedEtiquetas = localStorage.getItem("etiquetas");
+    setEtiquetas(savedEtiquetas ? JSON.parse(savedEtiquetas) : []);
 
-        // CONTACTOS
-        setCanales(data.canales || []);
-        setEtapas(data.etapas || []);
-        setTiposContacto(data.tiposContacto || []);
-        setEstadosCalor(data.estadosCalor || []);
-
-        // COLUMNAS
-        setColumnasDisponibles(data.columnasDisponibles || []);
-
-        const savedColumnas = localStorage.getItem("columnasGlobales");
-        setColumnasGlobales(
-          savedColumnas
-            ? JSON.parse(savedColumnas)
-            : data.columnasDisponibles?.slice(0, 4) || []
-        );
-
-        // ETIQUETAS
-        const savedEtiquetas = localStorage.getItem("etiquetas");
-        setEtiquetas(savedEtiquetas ? JSON.parse(savedEtiquetas) : data.etiquetas || []);
-
-        // VISTAS
-        const savedVistas = localStorage.getItem("vistas");
-        setVistas(savedVistas ? JSON.parse(savedVistas) : data.vistas || []);
-
-      } catch (err) {
-        console.warn("⚠️ No hay backend → usando configuración por defecto");
-
-        // CONTACTOS DEFAULTS
-        setCanales(["WhatsApp", "Email", "Instagram"]);
-        setEtapas(["Nuevo lead", "Contacto inicial", "En seguimiento", "Cliente"]);
-        setTiposContacto(["Lead", "Cliente"]);
-        setEstadosCalor(["Lead frío", "Lead tibio", "Lead caliente"]);
-
-        // COLUMNAS
-        setColumnasDisponibles(["titulo", "canal", "estado", "contacto", "creadaEn"]);
-
-        const savedColumnas = localStorage.getItem("columnasGlobales");
-        setColumnasGlobales(
-          savedColumnas
-            ? JSON.parse(savedColumnas)
-            : ["titulo", "canal", "estado", "contacto"]
-        );
-
-        // ETIQUETAS
-        const savedEtiquetas = localStorage.getItem("etiquetas");
-        setEtiquetas(savedEtiquetas ? JSON.parse(savedEtiquetas) : []);
-
-        // VISTAS
-        const savedVistas = localStorage.getItem("vistas");
-        setVistas(savedVistas ? JSON.parse(savedVistas) : []);
-      }
-    }
-
-    loadConfig();
+    // Vistas
+    const savedVistas = localStorage.getItem("vistas");
+    setVistas(savedVistas ? JSON.parse(savedVistas) : []);
   }, []);
 
-  // --------------------------------------------------------------------------------
-  // ⭐ GUARDAR EN LOCALSTORAGE
-  // --------------------------------------------------------------------------------
+  // Persistencia
   useEffect(() => {
     localStorage.setItem("columnasGlobales", JSON.stringify(columnasGlobales));
   }, [columnasGlobales]);
@@ -103,9 +74,7 @@ export function ConfigProvider({ children }) {
     localStorage.setItem("vistas", JSON.stringify(vistas));
   }, [vistas]);
 
-  // --------------------------------------------------------------------------------
-  // ⭐ CRUD ETIQUETAS
-  // --------------------------------------------------------------------------------
+  // CRUD Etiquetas (solo UI/local)
   const agregarEtiqueta = (nombre) => {
     setEtiquetas((prev) => [...prev, { id: Date.now(), nombre }]);
   };
@@ -120,9 +89,7 @@ export function ConfigProvider({ children }) {
     setEtiquetas((prev) => prev.filter((e) => e.id !== id));
   };
 
-  // --------------------------------------------------------------------------------
-  // ⭐ CRUD VISTAS
-  // --------------------------------------------------------------------------------
+  // CRUD Vistas (solo UI/local)
   const guardarVista = (vista) => {
     if (vista.id) {
       setVistas((prev) => prev.map((v) => (v.id === vista.id ? vista : v)));
@@ -135,30 +102,27 @@ export function ConfigProvider({ children }) {
     setVistas((prev) => prev.filter((v) => v.id !== id));
   };
 
-  // --------------------------------------------------------------------------------
-  // EXPORTAR CONTEXTO
-  // --------------------------------------------------------------------------------
   return (
     <ConfigContext.Provider
       value={{
-        API_BASE_URL,
-
-        // CONTACTOS CRM
+        // CONTACTOS
         canales,
         etapas,
         tiposContacto,
         estadosCalor,
 
-        // SISTEMA GLOBAL
+        // COLUMNAS
         columnasDisponibles,
         columnasGlobales,
         setColumnasGlobales,
 
+        // ETIQUETAS
         etiquetas,
         agregarEtiqueta,
         renombrarEtiqueta,
         eliminarEtiqueta,
 
+        // VISTAS
         vistas,
         guardarVista,
         eliminarVista,

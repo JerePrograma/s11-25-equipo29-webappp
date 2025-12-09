@@ -1,22 +1,33 @@
 import React, { useMemo } from "react";
-import ContactCard from "./contactcard.jsx";
+import ContactCard from "./ContactCard.jsx";
 
 /**
- * ContactList
- * props:
- * - items: [{ id, nombre, email, telefono?, empresa?, estado? }]
- * - filtro: string para buscar por nombre/email/empresa (opcional)
- * - estado: "todos" | "activo" | "seguimiento" | "inactivo" | "perdido" (opcional)
- * - onSelect: fn(contact) al hacer click en una tarjeta (opcional)
+ * @typedef {import("../api/types.js").ClienteResponse} ClienteResponse
  */
-function ContactList({ items = [], filtro = "", estado = "todos", onSelect }) {
+
+/**
+ * @param {{
+ *   contactos: ClienteResponse[];
+ *   filtro?: string;
+ *   estado?: "todos" | "activo" | "en_seguimiento" | "perdido";
+ *   onSelect?: (c: ClienteResponse) => void;
+ * }} props
+ */
+function ContactList({
+  contactos = [],
+  filtro = "",
+  estado = "todos",
+  onSelect,
+}) {
   const data = useMemo(() => {
     const texto = filtro.trim().toLowerCase();
 
-    let resultado = items;
+    let resultado = contactos;
 
     if (estado !== "todos") {
-      resultado = resultado.filter((c) => (c.estado || "activo") === estado);
+      resultado = resultado.filter(
+        (c) => (c.estadoGeneral || "en_seguimiento") === estado
+      );
     }
 
     if (texto) {
@@ -24,30 +35,32 @@ function ContactList({ items = [], filtro = "", estado = "todos", onSelect }) {
         const hay = [
           c.nombre,
           c.email,
-          c.empresa,
           c.telefono,
-          c.estado,
+          c.origen,
+          c.propietarioNombre,
+          ...(c.etiquetas || []),
         ]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
+
         return hay.includes(texto);
       });
     }
 
-    // orden alfabético por nombre
-    resultado = [...resultado].sort((a, b) =>
+    return [...resultado].sort((a, b) =>
       (a.nombre || "").localeCompare(b.nombre || "")
     );
+  }, [contactos, filtro, estado]);
 
-    return resultado;
-  }, [items, filtro, estado]);
-
-  if (!items.length) {
+  if (!contactos.length) {
     return (
-      <div className="alert alert-light border d-flex align-items-center" role="alert">
+      <div
+        className="alert alert-light border d-flex align-items-center"
+        role="alert"
+      >
         <span className="me-2">👥</span>
-        Aún no hay contactos. Agregá el primero para comenzar.
+        Aún no hay contactos. Crea el primero para comenzar.
       </div>
     );
   }
@@ -62,29 +75,21 @@ function ContactList({ items = [], filtro = "", estado = "todos", onSelect }) {
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <h6 className="mb-0 text-muted">Contactos encontrados: {data.length}</h6>
+      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-2 gap-2">
+        <h6 className="mb-0 text-muted">
+          Contactos encontrados: <strong>{data.length}</strong>
+        </h6>
       </div>
 
       {data.map((c) => (
-        <div
-          key={c.id || c.email}
-          role={onSelect ? "button" : undefined}
+        <ContactCard
+          key={c.id}
+          cliente={c}
           onClick={onSelect ? () => onSelect(c) : undefined}
-          className={onSelect ? "cursor-pointer" : ""}
-        >
-          <ContactCard
-            nombre={c.nombre}
-            email={c.email}
-            telefono={c.telefono}
-            empresa={c.empresa}
-            estado={c.estado}
-          />
-        </div>
+        />
       ))}
     </div>
   );
 }
 
 export default ContactList;
-

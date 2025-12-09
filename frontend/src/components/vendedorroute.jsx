@@ -5,11 +5,11 @@ import { useAuth } from "../context/authcontext.jsx";
 function VendedorRoute({ children }) {
   const { user } = useAuth();
 
-  if (!user || !user.logged) {
+  if (!user?.logged) {
     return <Navigate to="/login" replace />;
   }
 
-  // ⚠️ Solo vendedores pueden entrar
+  // Vendedores y admins pueden entrar
   if (user.role !== "vendedor" && user.role !== "admin") {
     return <Navigate to="/no-autorizado" replace />;
   }
@@ -18,4 +18,3 @@ function VendedorRoute({ children }) {
 }
 
 export default VendedorRoute;
-

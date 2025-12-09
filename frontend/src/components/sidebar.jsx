@@ -4,16 +4,16 @@ import { NavLink } from "react-router-dom";
 function Sidebar() {
   return (
     <aside
-      className="d-none d-md-block bg-light border-end vh-100 p-3"
-      style={{ width: "250px" }}
+      className="d-none d-md-flex flex-column bg-light border-end p-3"
+      style={{ minWidth: "240px", maxWidth: "280px" }}
     >
       <h5 className="text-primary fw-bold mb-4">Menú</h5>
 
-      <nav className="nav flex-column">
+      <nav className="nav flex-column gap-1">
         <NavLink
           to="/dashboard"
           className={({ isActive }) =>
-            `nav-link ${isActive ? "active fw-bold text-primary" : "text-dark"}`
+            `nav-link ${isActive ? "fw-bold text-primary" : "text-dark"}`
           }
         >
           📊 Dashboard
@@ -22,7 +22,7 @@ function Sidebar() {
         <NavLink
           to="/pipelines"
           className={({ isActive }) =>
-            `nav-link ${isActive ? "active fw-bold text-primary" : "text-dark"}`
+            `nav-link ${isActive ? "fw-bold text-primary" : "text-dark"}`
           }
         >
           🧩 Pipelines
@@ -31,7 +31,7 @@ function Sidebar() {
         <NavLink
           to="/contactos"
           className={({ isActive }) =>
-            `nav-link ${isActive ? "active fw-bold text-primary" : "text-dark"}`
+            `nav-link ${isActive ? "fw-bold text-primary" : "text-dark"}`
           }
         >
           👥 Contactos
@@ -40,17 +40,16 @@ function Sidebar() {
         <NavLink
           to="/tareas"
           className={({ isActive }) =>
-            `nav-link ${isActive ? "active fw-bold text-primary" : "text-dark"}`
+            `nav-link ${isActive ? "fw-bold text-primary" : "text-dark"}`
           }
         >
           ✅ Tareas
         </NavLink>
 
-        {/* ⭐ NUEVO: LEADS - con el mismo estilo que los otros */}
         <NavLink
           to="/leads"
           className={({ isActive }) =>
-            `nav-link ${isActive ? "active fw-bold text-primary" : "text-dark"}`
+            `nav-link ${isActive ? "fw-bold text-primary" : "text-dark"}`
           }
         >
           🧲 Leads
@@ -58,7 +57,7 @@ function Sidebar() {
       </nav>
 
       <div className="mt-4 small text-muted">
-        <div className="d-flex justify-content-between">
+        <div className="d-flex justify-content-between mb-1">
           <span>Uso del sistema</span>
           <span>72%</span>
         </div>
@@ -66,9 +65,9 @@ function Sidebar() {
           className="progress"
           role="progressbar"
           aria-label="Uso del sistema"
-          aria-valuenow="72"
-          aria-valuemin="0"
-          aria-valuemax="100"
+          aria-valuenow={72}
+          aria-valuemin={0}
+          aria-valuemax={100}
         >
           <div
             className="progress-bar bg-primary"

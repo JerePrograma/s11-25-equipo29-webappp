@@ -1,114 +1,73 @@
 // src/context/usercontext.jsx
 import React, { createContext, useContext, useEffect, useState } from "react";
+import {
+  listUsuarios,
+  createUsuario,
+  updateUsuario,
+  deleteUsuario,
+} from "../api/usuarioApi.js";
 
-const UserContext = createContext();
+/**
+ * UserContext:
+ * - Administra el listado de usuarios del sistema (UsuarioResponse).
+ * - Usa UsuarioController.
+ */
 
-// 🌐 BASE URL del backend real (cuando exista)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-// 👉 RUTA REAL
-const USERS_API_URL = `${API_BASE_URL}/api/users`;
+const UserContext = createContext(null);
 
 export function UserProvider({ children }) {
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // -------------------------------------------------------
-  // ⭐ CARGAR USUARIOS (fetch real + fallback sin romper)
-  // -------------------------------------------------------
-  useEffect(() => {
-    async function cargarUsuarios() {
-      try {
-        // Si no hay backend → no intentamos fetch
-        if (!API_BASE_URL) {
-          console.warn("⚠️ No hay backend → usuarios vacíos");
-          setUsers([]);
-          return;
-        }
-
-        const res = await fetch(USERS_API_URL);
-
-        if (!res.ok) throw new Error("Backend no disponible");
-
-        const data = await res.json();
-        setUsers(Array.isArray(data) ? data : []);
-
-      } catch (err) {
-        console.warn("⚠️ No se pudo cargar usuarios → usando []");
-        setUsers([]); // fallback seguro
-      }
+  const cargarUsuarios = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await listUsuarios();
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error al cargar usuarios", err);
+      setError("No se pudieron cargar los usuarios.");
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     cargarUsuarios();
   }, []);
 
-  // -------------------------------------------------------
-  // ➕ CREAR USUARIO
-  // -------------------------------------------------------
-  async function crearUsuario(nuevo) {
-    const userConId = { ...nuevo, id: Date.now() };
+  const crearUsuarioHandler = async (nuevo) => {
+    const creado = await createUsuario(nuevo);
+    setUsers((prev) => [...prev, creado]);
+    return creado;
+  };
 
-    try {
-      await fetch(USERS_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userConId),
-      });
-    } catch (err) {
-      console.warn("⚠️ Backend no disponible → usuario solo en memoria");
-    }
-
-    setUsers((prev) => [...prev, userConId]);
-  }
-
-  // -------------------------------------------------------
-  // ✏ EDITAR USUARIO
-  // -------------------------------------------------------
-  async function editarUsuario(id, cambios) {
-    const original = users.find((u) => u.id === id);
-    if (!original) return;
-
-    const actualizado = { ...original, ...cambios };
-
-    try {
-      await fetch(`${USERS_API_URL}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(actualizado),
-      });
-    } catch (err) {
-      console.warn("⚠️ Backend no disponible → edición solo en memoria");
-    }
-
+  const editarUsuarioHandler = async (id, cambios) => {
+    const actualizado = await updateUsuario(id, cambios);
     setUsers((prev) =>
       prev.map((u) => (u.id === id ? actualizado : u))
     );
-  }
+    return actualizado;
+  };
 
-  // -------------------------------------------------------
-  // 🗑 ELIMINAR USUARIO
-  // -------------------------------------------------------
-  async function eliminarUsuario(id) {
-    try {
-      await fetch(`${USERS_API_URL}/${id}`, {
-        method: "DELETE",
-      });
-    } catch (err) {
-      console.warn("⚠️ Backend no disponible → borrado solo en UI");
-    }
-
+  const eliminarUsuarioHandler = async (id) => {
+    await deleteUsuario(id);
     setUsers((prev) => prev.filter((u) => u.id !== id));
-  }
+  };
 
-  // -------------------------------------------------------
-  // EXPORTAR CONTEXTO
-  // -------------------------------------------------------
   return (
     <UserContext.Provider
       value={{
         users,
-        crearUsuario,
-        editarUsuario,
-        eliminarUsuario,
+        loading,
+        error,
+        recargar: cargarUsuarios,
+        crearUsuario: crearUsuarioHandler,
+        editarUsuario: editarUsuarioHandler,
+        eliminarUsuario: eliminarUsuarioHandler,
       }}
     >
       {children}

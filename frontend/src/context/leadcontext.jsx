@@ -1,103 +1,105 @@
 // src/context/leadcontext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
+import {
+  listClientes,
+  createCliente,
+  updateCliente,
+  deleteCliente,
+} from "../api/clienteApi.js";
 
-const LeadContext = createContext();
+/**
+ * LeadContext:
+ * - Representa "leads" como clientes con tipo === "lead".
+ * - Usa ClienteController y Cliente*Request/Response del backend.
+ */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const LeadContext = createContext(null);
 
 export function LeadProvider({ children }) {
   const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // --------------------------------------------------
-  // ⭐ CARGAR LEADS (fetch real + fallback sin romper)
-  // --------------------------------------------------
-  useEffect(() => {
-    async function cargarLeads() {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/leads`);
-
-        if (!res.ok) {
-          throw new Error("Backend no disponible");
-        }
-
-        const data = await res.json();
-        setLeads(data); // ← cuando exista backend, funciona
-
-      } catch (error) {
-        console.warn("⚠️ No se pudo conectar al backend → usando []");
-        setLeads([]); // ← ENGÁÑO PRO PARA QUE NO ROMPA
-      }
+  const cargarLeads = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const clientes = await listClientes();
+      const soloLeads = clientes.filter((c) => c.tipo === "lead");
+      setLeads(soloLeads);
+    } catch (err) {
+      console.error("Error al cargar leads", err);
+      setError("No se pudieron cargar los leads.");
+      setLeads([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     cargarLeads();
   }, []);
 
-  // --------------------------------------------------
-  // ⭐ AGREGAR LEAD (cuando haya backend se conecta)
-  // --------------------------------------------------
+  /**
+   * agregarLead:
+   * espera un objeto compatible con ClienteCreateRequest,
+   * pero fuerza tipo = "lead" y estadoGeneral por defecto.
+   *
+   * ej:
+   * agregarLead({
+   *   nombre, email, telefono, origen, etapaFunnelId, propietarioId
+   * })
+   */
   const agregarLead = async (nuevo) => {
-    const leadConId = {
-      ...nuevo,
-      id: Date.now(),
-      creadoEn: new Date().toISOString(),
-    };
-
     try {
-      await fetch(`${API_BASE_URL}/api/leads`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(leadConId),
-      });
-    } catch (error) {
-      console.warn("⚠️ Backend no disponible → guardando en memoria");
-    }
+      const payload = {
+        nombre: nuevo.nombre,
+        email: nuevo.email,
+        telefono: nuevo.telefono,
+        tipo: "lead",
+        estadoGeneral: nuevo.estadoGeneral || "en_seguimiento",
+        etapaFunnelId: nuevo.etapaFunnelId ?? null,
+        propietarioId: nuevo.propietarioId,
+        origen: nuevo.origen || "manual",
+      };
 
-    setLeads((prev) => [...prev, leadConId]);
+      const creado = await createCliente(payload);
+      setLeads((prev) => [...prev, creado]);
+    } catch (err) {
+      console.error("Error al crear lead", err);
+      throw err;
+    }
   };
 
-  // --------------------------------------------------
-  // ⭐ EDITAR LEAD
-  // --------------------------------------------------
   const editarLead = async (id, cambios) => {
-    const original = leads.find((l) => l.id === id);
-    if (!original) return;
-
-    const actualizado = { ...original, ...cambios };
-
     try {
-      await fetch(`${API_BASE_URL}/api/leads/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(actualizado),
-      });
-    } catch (error) {
-      console.warn("⚠️ Backend no disponible → editando en memoria");
+      const actualizado = await updateCliente(id, cambios);
+      setLeads((prev) =>
+        prev.map((l) => (l.id === id ? actualizado : l))
+      );
+    } catch (err) {
+      console.error("Error al editar lead", err);
+      throw err;
     }
-
-    setLeads((prev) =>
-      prev.map((l) => (l.id === id ? actualizado : l))
-    );
   };
 
-  // --------------------------------------------------
-  // ⭐ ELIMINAR LEAD
-  // --------------------------------------------------
   const eliminarLead = async (id) => {
     try {
-      await fetch(`${API_BASE_URL}/api/leads/${id}`, {
-        method: "DELETE",
-      });
-    } catch (error) {
-      console.warn("⚠️ Backend no disponible → borrando en memoria");
+      await deleteCliente(id);
+      setLeads((prev) => prev.filter((l) => l.id !== id));
+    } catch (err) {
+      console.error("Error al eliminar lead", err);
+      throw err;
     }
-
-    setLeads((prev) => prev.filter((l) => l.id !== id));
   };
 
   return (
     <LeadContext.Provider
       value={{
         leads,
+        loading,
+        error,
+        cargarLeads,
         agregarLead,
         editarLead,
         eliminarLead,
