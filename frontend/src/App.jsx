@@ -4,19 +4,16 @@ import { Outlet, NavLink } from "react-router-dom";
 import { useAuth } from "./context/authcontext.jsx";
 import "./styles/App.css";
 
-function App() {
+export default function App() {
   const { user, logout } = useAuth();
 
-  const rol = user?.role;
-  const isAdmin = rol === "admin";
-  const isVendedor = rol === "vendedor"; // preparado por si lo usás en otros lados
-  const isExterno = rol === "externo";
+  const role = (user?.role || "").toLowerCase();
+  const isAdmin = role === "admin";
+  const isExterno = role === "externo";
 
-  console.log("🔍 USER:", user);
-  console.log("🔍 ROLE:", user?.role);
-  console.log("🔍 EXTERNO?:", isExterno);
-
-  // ==== MODO VISITANTE (sin sidebar) ====
+  // ==========================
+  // MODO VISITANTE (rol "externo")
+  // ==========================
   if (isExterno) {
     return (
       <div className="app-visitor">
@@ -60,7 +57,9 @@ function App() {
     );
   }
 
-  // ==== MODO APP (admin / vendedor / otros roles internos) ====
+  // ==========================
+  // MODO APP (roles internos)
+  // ==========================
   return (
     <div className="app-shell">
       {/* SIDEBAR */}
@@ -75,6 +74,7 @@ function App() {
         <nav className="sidebar-nav">
           <NavLink
             to="/"
+            end
             className={({ isActive }) =>
               `sidebar-link sidebar-btn btn ${
                 isActive ? "btn-dark" : "btn-outline-secondary"
@@ -132,6 +132,19 @@ function App() {
 
           {isAdmin && (
             <NavLink
+              to="/roles"
+              className={({ isActive }) =>
+                `sidebar-link sidebar-btn btn ${
+                  isActive ? "btn-dark" : "btn-outline-secondary"
+                }`
+              }
+            >
+              🛡 Roles
+            </NavLink>
+          )}
+
+          {isAdmin && (
+            <NavLink
               to="/configuracion/vistas"
               className={({ isActive }) =>
                 `sidebar-link sidebar-btn btn ${
@@ -182,5 +195,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
