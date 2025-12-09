@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useLeads } from "../context/leadcontext.jsx";
 
-const API_URL = import.meta.env.VITE_API_URL; // ⭐ URL del backend real
+const API_URL = import.meta.env.VITE_API_URL; // URL del backend
 
 function Mensajes() {
   const [searchParams] = useSearchParams();
@@ -13,16 +13,59 @@ function Mensajes() {
   const canalDesdeURL = searchParams.get("canal");
 
   const [contactosConfig, setContactosConfig] = useState(null);
+  const [nuevoMensaje, setNuevoMensaje] = useState("");
+  const [errorCargaContactos, setErrorCargaContactos] = useState(null);
 
-  // ⭐ Cargar contactos reales desde BACKEND
+  // ---------------------------------------------------------------------------
+  // Cargar contactos reales desde BACKEND (ClienteController -> /api/clientes)
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    fetch(`${API_URL}/contactos`)
-      .then((res) => res.json())
-      .then((data) => setContactosConfig(data))
-      .catch((err) => console.error("Error cargando contactos:", err));
+    let cancelado = false;
+
+    async function cargarContactos() {
+      try {
+        setErrorCargaContactos(null);
+
+        const res = await fetch(`${API_URL}/api/clientes`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        /** @type {import("../api/types.js").ClienteResponse[]} */
+        const clientes = await res.json();
+
+        // Mapeamos por nombre → { whatsapp, email }
+        const mapa = clientes.reduce((acc, c) => {
+          acc[c.nombre] = {
+            whatsapp: c.telefono || "",
+            email: c.email || "",
+          };
+          return acc;
+        }, /** @type {Record<string, {whatsapp: string, email: string}>} */ ({}));
+
+        if (!cancelado) {
+          setContactosConfig(mapa);
+        }
+      } catch (err) {
+        console.error("Error cargando contactos:", err);
+        if (!cancelado) {
+          setErrorCargaContactos("No se pudieron cargar los contactos.");
+          // Seteamos objeto vacío para salir del "Cargando..."
+          setContactosConfig({});
+        }
+      }
+    }
+
+    cargarContactos();
+
+    return () => {
+      cancelado = true;
+    };
   }, []);
 
-  // ⭐ Formatear fecha/hora
+  // ---------------------------------------------------------------------------
+  // Formatear fecha/hora
+  // ---------------------------------------------------------------------------
   const formatearFechaHora = (iso) => {
     if (!iso) return "";
     const f = new Date(iso);
@@ -35,12 +78,16 @@ function Mensajes() {
     });
   };
 
-  // ⭐ Obtener lead actual desde contexto
+  // ---------------------------------------------------------------------------
+  // Obtener lead actual desde contexto
+  // ---------------------------------------------------------------------------
   const lead = useMemo(() => {
     return leads.find((l) => l.nombre === contactoDesdeURL) || null;
   }, [leads, contactoDesdeURL]);
 
-  // ⭐ Ordenar mensajes por fecha
+  // ---------------------------------------------------------------------------
+  // Ordenar mensajes por fecha
+  // ---------------------------------------------------------------------------
   const mensajesOrdenados = useMemo(() => {
     if (!lead) return [];
     return [...(lead.mensajes || [])].sort(
@@ -48,23 +95,34 @@ function Mensajes() {
     );
   }, [lead]);
 
-  const [nuevoMensaje, setNuevoMensaje] = useState("");
+  // ---------------------------------------------------------------------------
+  // Estados de carga / error
+  // ---------------------------------------------------------------------------
+  if (!contactosConfig) {
+    return <p className="p-4">Cargando contactos…</p>;
+  }
 
-  if (!contactosConfig) return <p className="p-4">Cargando contactos…</p>;
+  if (!lead) {
+    return <p className="p-4">No se encontró el lead.</p>;
+  }
 
-  if (!lead) return <p className="p-4">No se encontró el lead.</p>;
+  // ---------------------------------------------------------------------------
+  // Datos del contacto (provenientes de /api/clientes)
+  // ---------------------------------------------------------------------------
+  const datosContacto = contactosConfig[lead.nombre] || {};
+  const numeroWhatsapp = datosContacto.whatsapp || "";
+  const email = datosContacto.email || "";
 
-  // 👉 Datos del contacto devueltos por la API
-  const datosContacto = contactosConfig[lead.nombre];
-  const numeroWhatsapp = datosContacto?.whatsapp || "";
-  const email = datosContacto?.email || "";
-
-  // ⭐ Enviar mensaje → se guarda en el backend al enchufarlo
+  // ---------------------------------------------------------------------------
+  // Enviar mensaje → por ahora actualiza contexto y hace POST "maqueta"
+  // ---------------------------------------------------------------------------
   const enviarMensaje = async () => {
-    if (!nuevoMensaje.trim()) return;
+    const texto = nuevoMensaje.trim();
+    if (!texto) return;
 
+    // Actualizamos estado local del contexto
     agregarMensaje(lead.id, {
-      texto: nuevoMensaje,
+      texto,
       canal: canalDesdeURL || "WhatsApp",
       fecha: new Date().toISOString(),
       enviadoPor: "usuario",
@@ -72,53 +130,67 @@ function Mensajes() {
 
     setNuevoMensaje("");
 
-    // ⭐ YA PREPARADO PARA BACKEND REAL
+    // TODO: Enchufar con backend real de mensajes:
+    //   - Endpoint real: POST /api/mensajes
+    //   - Body: { conversacionId, contenido }
+    //   - Requiere que tengas conversacionId disponible
     try {
       await fetch(`${API_URL}/mensajes/${lead.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          texto: nuevoMensaje,
+          texto,
           canal: canalDesdeURL,
         }),
       });
     } catch (err) {
-      console.error("Error enviando mensaje al backend:", err);
+      console.error("Error enviando mensaje al backend (placeholder):", err);
     }
   };
 
   return (
     <div className="container py-4">
-
-      {/* ⭐ INFORMACIÓN DEL CONTACTO */}
+      {/* INFO CONTACTO */}
       <div className="mb-4">
         <h2 className="fw-bold">{lead.nombre}</h2>
 
         <p className="text-muted">
-          Canal actual: <strong>{canalDesdeURL}</strong>
+          Canal actual: <strong>{canalDesdeURL || "WhatsApp"}</strong>
         </p>
+
+        {errorCargaContactos && (
+          <p className="text-danger small mb-1">{errorCargaContactos}</p>
+        )}
 
         <p>
           📱 WhatsApp:{" "}
-          <a
-            href={`https://wa.me/${numeroWhatsapp}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-success"
-          >
-            {numeroWhatsapp}
-          </a>
+          {numeroWhatsapp ? (
+            <a
+              href={`https://wa.me/${numeroWhatsapp}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-success"
+            >
+              {numeroWhatsapp}
+            </a>
+          ) : (
+            <span className="text-muted">Sin número cargado</span>
+          )}
         </p>
 
         <p>
           📧 Email:{" "}
-          <a href={`mailto:${email}`} className="text-primary">
-            {email}
-          </a>
+          {email ? (
+            <a href={`mailto:${email}`} className="text-primary">
+              {email}
+            </a>
+          ) : (
+            <span className="text-muted">Sin email cargado</span>
+          )}
         </p>
       </div>
 
-      {/* ⭐ LISTA DE MENSAJES */}
+      {/* LISTA DE MENSAJES */}
       <div
         className="border rounded p-3 mb-3 bg-white"
         style={{ height: "350px", overflowY: "auto" }}
@@ -145,13 +217,19 @@ function Mensajes() {
         ))}
       </div>
 
-      {/* ⭐ INPUT PARA ENVIAR MENSAJE */}
+      {/* INPUT MENSAJE */}
       <div className="d-flex gap-2">
         <input
           className="form-control"
           placeholder="Escribir mensaje…"
           value={nuevoMensaje}
           onChange={(e) => setNuevoMensaje(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              enviarMensaje();
+            }
+          }}
         />
 
         <button className="btn btn-primary" onClick={enviarMensaje}>
