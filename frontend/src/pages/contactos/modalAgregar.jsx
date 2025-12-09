@@ -1,43 +1,49 @@
+// src/pages/Contactos/ModalAgregar.jsx
 import React, { useState, useEffect } from "react";
-import { useLeads } from "../../context/leadcontext.jsx";
 import { useConfig } from "../../context/configcontext.jsx";
 
-export default function ModalAgregar({ onClose }) {
-  const { agregarLead } = useLeads();
-  const {
-    canales,
-    etapas,
-    tiposContacto,
-    estadosCalor,
-  } = useConfig();
+/**
+ * ModalAgregar
+ *
+ * Responsabilidad:
+ * - Mostrar formulario para crear un contacto.
+ * - Recoger datos básicos (nombre, email, teléfono) + metadata (canal, etapa, tipoContacto, estadoCalor, origen).
+ * - Normalizar lo mínimo (ej: tipo "lead"/"cliente") y delegar en onSave.
+ *
+ * No llama al backend directamente: delega en el padre (Contactos).
+ */
+export default function ModalAgregar({ onClose, onSave }) {
+  const { canales, etapas, tiposContacto, estadosCalor } = useConfig();
 
   const [form, setForm] = useState({
     nombre: "",
+    email: "",
+    telefono: "",
     canal: "",
     etapa: "",
     tipoContacto: "",
     estadoCalor: "",
+    origen: "",
     creadoEn: new Date().toISOString(),
   });
 
   // Setear valores iniciales cuando existan opciones
   useEffect(() => {
-    if (canales.length > 0 && !form.canal) {
-      setForm((f) => ({ ...f, canal: canales[0] }));
-    }
-    if (etapas.length > 0 && !form.etapa) {
-      setForm((f) => ({ ...f, etapa: etapas[0] }));
-    }
-    if (tiposContacto.length > 0 && !form.tipoContacto) {
-      setForm((f) => ({ ...f, tipoContacto: tiposContacto[0] }));
-    }
-    if (estadosCalor.length > 0 && !form.estadoCalor) {
-      setForm((f) => ({ ...f, estadoCalor: estadosCalor[0] }));
-    }
+    setForm((prev) => ({
+      ...prev,
+      canal: prev.canal || (canales[0] || ""),
+      etapa: prev.etapa || (etapas[0] || ""),
+      tipoContacto: prev.tipoContacto || (tiposContacto[0] || "Lead"),
+      estadoCalor: prev.estadoCalor || (estadosCalor[0] || "Lead frío"),
+    }));
   }, [canales, etapas, tiposContacto, estadosCalor]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = (e) => {
@@ -47,16 +53,38 @@ export default function ModalAgregar({ onClose }) {
       alert("El nombre es obligatorio");
       return;
     }
+    if (!form.email.trim()) {
+      alert("El email es obligatorio");
+      return;
+    }
+    if (!form.telefono.trim()) {
+      alert("El teléfono es obligatorio");
+      return;
+    }
 
-    agregarLead(form);
-    onClose();
+    // Normalizar tipo para el backend: "lead" / "cliente"
+    const tipoNormalizado =
+      form.tipoContacto?.toLowerCase() === "cliente" ? "cliente" : "lead";
+
+    const payload = {
+      ...form,
+      tipo: tipoNormalizado,
+      // estadoGeneral lo podés setear acá o dejar que el padre use su default
+      // estadoGeneral: "en_seguimiento",
+    };
+
+    // Delega en el padre (Contactos) → este arma ClienteCreateRequest
+    onSave(payload);
   };
 
   return (
-    <div className="modal d-block" tabIndex="-1" style={{ background: "rgba(0,0,0,0.5)" }}>
+    <div
+      className="modal d-block"
+      tabIndex="-1"
+      style={{ background: "rgba(0,0,0,0.5)" }}
+    >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
-
           <div className="modal-header">
             <h5 className="modal-title">Agregar Contacto</h5>
             <button className="btn-close" onClick={onClose}></button>
@@ -64,7 +92,6 @@ export default function ModalAgregar({ onClose }) {
 
           <div className="modal-body">
             <form className="row g-3" onSubmit={handleSubmit}>
-
               {/* NOMBRE */}
               <div className="col-12">
                 <label className="form-label">Nombre *</label>
@@ -73,6 +100,32 @@ export default function ModalAgregar({ onClose }) {
                   className="form-control"
                   name="nombre"
                   value={form.nombre}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              {/* EMAIL */}
+              <div className="col-md-6">
+                <label className="form-label">Email *</label>
+                <input
+                  type="email"
+                  className="form-control"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              {/* TELÉFONO */}
+              <div className="col-md-6">
+                <label className="form-label">Teléfono *</label>
+                <input
+                  type="tel"
+                  className="form-control"
+                  name="telefono"
+                  value={form.telefono}
                   onChange={handleChange}
                   required
                 />
@@ -88,14 +141,16 @@ export default function ModalAgregar({ onClose }) {
                   onChange={handleChange}
                 >
                   {canales.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              {/* ETAPA */}
+              {/* ETAPA (UI) */}
               <div className="col-md-6">
-                <label className="form-label">Etapa</label>
+                <label className="form-label">Etapa (visual)</label>
                 <select
                   className="form-select"
                   name="etapa"
@@ -103,7 +158,9 @@ export default function ModalAgregar({ onClose }) {
                   onChange={handleChange}
                 >
                   {etapas.map((e) => (
-                    <option key={e} value={e}>{e}</option>
+                    <option key={e} value={e}>
+                      {e}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -118,7 +175,9 @@ export default function ModalAgregar({ onClose }) {
                   onChange={handleChange}
                 >
                   {tiposContacto.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -133,9 +192,24 @@ export default function ModalAgregar({ onClose }) {
                   onChange={handleChange}
                 >
                   {estadosCalor.map((e) => (
-                    <option key={e} value={e}>{e}</option>
+                    <option key={e} value={e}>
+                      {e}
+                    </option>
                   ))}
                 </select>
+              </div>
+
+              {/* ORIGEN */}
+              <div className="col-12">
+                <label className="form-label">Origen (opcional)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="origen"
+                  placeholder="Landing, campaña, referido..."
+                  value={form.origen}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="col-12">
@@ -143,10 +217,8 @@ export default function ModalAgregar({ onClose }) {
                   Guardar contacto
                 </button>
               </div>
-
             </form>
           </div>
-
         </div>
       </div>
     </div>
