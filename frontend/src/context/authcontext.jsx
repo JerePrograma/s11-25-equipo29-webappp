@@ -3,19 +3,31 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { listUsuarios } from "../api/usuarioApi.js";
 
 /**
- * AuthContext:
- * - NO hace el login HTTP (eso lo hace Login.jsx + authApi.login).
- * - Recibe email/nombre ya autenticado y resuelve el usuario real contra /api/usuarios.
- * - Guarda { id, nombre, email, role, logged } en localStorage.
+ * @typedef {import("../api/types.js").UsuarioResponse} UsuarioResponse
  */
 
-const AuthContext = createContext(null);
+/**
+ * @typedef {Object} AuthUser
+ * @property {number|null} id
+ * @property {string} nombre
+ * @property {string} email
+ * @property {string} role  // "admin", "vendedor", "externo", etc.
+ * @property {boolean} logged
+ */
+
+const AuthContext = createContext(
+  /** @type {{ user: AuthUser | null, login: (args: {email: string, nombre?: string}) => Promise<void>, logout: () => void } | null} */ (
+    null
+  )
+);
+
 const STORAGE_KEY = "startupcrm_user";
 
 export function AuthProvider({ children }) {
+  /** @type {[AuthUser | null, Function]} */
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
+    return saved ? /** @type {AuthUser} */ (JSON.parse(saved)) : null;
   });
 
   // Persistencia en localStorage
@@ -30,26 +42,30 @@ export function AuthProvider({ children }) {
   /**
    * login({ email, nombre })
    * Se llama DESPUÉS de un login exitoso contra /api/login.
-   * Usa /api/usuarios para mapear email → UsuarioResponse (id, rol, etc.).
+   * Usa /api/usuarios para mapear email → UsuarioResponse.
+   * @param {{ email: string, nombre?: string }} args
    */
   const login = async ({ email, nombre }) => {
     const normalizado = (email || "").trim().toLowerCase();
     if (!normalizado) return;
 
     try {
+      /** @type {UsuarioResponse[]} */
       const usuarios = await listUsuarios();
       const encontrado = usuarios.find(
         (u) => (u.email || "").toLowerCase() === normalizado
       );
 
       if (encontrado) {
-        setUser({
+        /** @type {AuthUser} */
+        const authUser = {
           id: encontrado.id,
           nombre: encontrado.nombre,
           email: encontrado.email,
-          role: (encontrado.rolNombre || "").toLowerCase(), // "admin", "vendedor", etc.
+          role: (encontrado.rolNombre || "").toLowerCase(),
           logged: true,
-        });
+        };
+        setUser(authUser);
         return;
       }
     } catch (err) {
@@ -60,13 +76,15 @@ export function AuthProvider({ children }) {
     }
 
     // Fallback: visitante/externo
-    setUser({
+    /** @type {AuthUser} */
+    const externo = {
       id: null,
       nombre: nombre || normalizado.split("@")[0] || "Usuario",
       email: normalizado,
       role: "externo",
       logged: true,
-    });
+    };
+    setUser(externo);
   };
 
   const logout = () => {
@@ -83,5 +101,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth debe usarse dentro de AuthProvider");
+  }
+  return ctx;
 }

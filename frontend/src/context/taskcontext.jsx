@@ -9,19 +9,31 @@ import {
 } from "../api/tareaApi.js";
 
 /**
- * TaskContext:
- * - Trabaja con TareaResponse del backend.
- * - Lista tareas para el usuario actual (asignadoAId).
- * - Permite crear/actualizar/completar/eliminar.
+ * @typedef {import("../api/types.js").TareaResponse} TareaResponse
+ * @typedef {import("../api/types.js").TareaCreateRequest} TareaCreateRequest
+ * @typedef {import("../api/types.js").TareaUpdateRequest} TareaUpdateRequest
+ */
+
+/**
+ * @typedef {Object} NuevaTareaInput
+ * @property {string} titulo
+ * @property {string} [descripcion]
+ * @property {number | null | undefined} [clienteId]
+ * @property {number | null | undefined} [conversacionId]
+ * @property {string | null | undefined} [fechaLimite] // 'YYYY-MM-DD'
+ * @property {"baja" | "media" | "alta"} [prioridad]
  */
 
 const TaskContext = createContext(null);
 
 export function TaskProvider({ children }) {
   const { user } = useAuth();
-  const [tareas, setTareas] = useState([]);
+
+  const [tareas, setTareas] = useState(
+    /** @type {TareaResponse[]} */ ([]),
+  );
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(/** @type {string | null} */ (null));
 
   const cargarTareas = async () => {
     if (!user?.logged || !user?.id) {
@@ -33,7 +45,7 @@ export function TaskProvider({ children }) {
       setLoading(true);
       setError(null);
       const data = await listTareasPorUsuario(user.id);
-      setTareas(data);
+      setTareas(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error al cargar tareas", err);
       setError("No se pudieron cargar las tareas.");
@@ -49,16 +61,16 @@ export function TaskProvider({ children }) {
   }, [user?.id]);
 
   /**
-   * crearTarea:
-   * espera un objeto compatible con TareaCreateRequest:
-   * { titulo, descripcion, clienteId?, conversacionId?, fechaLimite?, prioridad? }
-   * asignadoAId se completa con user.id.
+   * Crear tarea asignada al usuario actual.
+   * @param {NuevaTareaInput} input
+   * @returns {Promise<TareaResponse>}
    */
-  const crearTarea = async (input) => {
+  const crearTareaHandler = async (input) => {
     if (!user?.id) {
       throw new Error("No hay usuario autenticado para asignar la tarea.");
     }
 
+    /** @type {TareaCreateRequest} */
     const payload = {
       titulo: input.titulo,
       descripcion: input.descripcion || "",
@@ -74,10 +86,17 @@ export function TaskProvider({ children }) {
     return creada;
   };
 
-  const actualizarTarea = async (id, cambios) => {
+  /**
+   * Actualizar tarea.
+   * @param {number} id
+   * @param {Partial<TareaUpdateRequest>} cambios
+   * @returns {Promise<TareaResponse | undefined>}
+   */
+  const actualizarTareaHandler = async (id, cambios) => {
     const original = tareas.find((t) => t.id === id);
     if (!original) return;
 
+    /** @type {TareaUpdateRequest} */
     const payload = {
       titulo: cambios.titulo ?? original.titulo,
       descripcion: cambios.descripcion ?? original.descripcion,
@@ -94,11 +113,19 @@ export function TaskProvider({ children }) {
     return actualizada;
   };
 
-  const completarTarea = async (id) => {
-    return actualizarTarea(id, { estado: "completada" });
+  /**
+   * Completar tarea (estado = 'completada').
+   * @param {number} id
+   */
+  const completarTareaHandler = async (id) => {
+    return actualizarTareaHandler(id, { estado: "completada" });
   };
 
-  const eliminarTarea = async (id) => {
+  /**
+   * Eliminar tarea.
+   * @param {number} id
+   */
+  const eliminarTareaHandler = async (id) => {
     await deleteTarea(id);
     setTareas((prev) => prev.filter((t) => t.id !== id));
   };
@@ -110,10 +137,10 @@ export function TaskProvider({ children }) {
         loading,
         error,
         cargarTareas,
-        crearTarea,
-        actualizarTarea,
-        completarTarea,
-        eliminarTarea,
+        crearTarea: crearTareaHandler,
+        actualizarTarea: actualizarTareaHandler,
+        completarTarea: completarTareaHandler,
+        eliminarTarea: eliminarTareaHandler,
       }}
     >
       {children}
@@ -122,5 +149,9 @@ export function TaskProvider({ children }) {
 }
 
 export function useTasks() {
-  return useContext(TaskContext);
+  const ctx = useContext(TaskContext);
+  if (!ctx) {
+    throw new Error("useTasks debe usarse dentro de <TaskProvider>");
+  }
+  return ctx;
 }

@@ -1,37 +1,70 @@
 // src/context/configcontext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-const ConfigContext = createContext(null);
+/**
+ * @typedef {Object} EtiquetaUI
+ * @property {number} id
+ * @property {string} nombre
+ */
+
+/**
+ * @typedef {Object} VistaUI
+ * @property {number} id
+ * @property {string} nombre
+ * @property {string} entidad   // 'cliente','conversacion','tarea' (cuando lo alinees con backend)
+ * @property {Object} [extra]   // extensible
+ */
+
+const ConfigContext = createContext(
+  /** @type {{
+    canales: string[];
+    etapas: string[];
+    tiposContacto: string[];
+    estadosCalor: string[];
+    columnasDisponibles: string[];
+    columnasGlobales: string[];
+    setColumnasGlobales: (cols: string[]) => void;
+    etiquetas: EtiquetaUI[];
+    agregarEtiqueta: (nombre: string) => void;
+    renombrarEtiqueta: (id: number, nuevoNombre: string) => void;
+    eliminarEtiqueta: (id: number) => void;
+    vistas: VistaUI[];
+    guardarVista: (vista: Partial<VistaUI>) => void;
+    eliminarVista: (id: number) => void;
+  } | null} */ (null)
+);
 
 /**
  * ConfigProvider:
  * - Configuración de UI (canales, etapas, tipos de contacto, etc.).
  * - Usa localStorage para columnas, etiquetas y vistas.
- * - No llama a backend por ahora (no hay /api/config en tu backend).
+ * - No llama a backend por ahora.
  */
-
 export function ConfigProvider({ children }) {
   // CONTACTOS CRM
-  const [canales, setCanales] = useState([]);
-  const [etapas, setEtapas] = useState([]);
-  const [tiposContacto] = useState(["lead", "cliente"]);
-  const [estadosCalor] = useState([
-    "Lead frío",
-    "Lead tibio",
-    "Lead caliente",
-  ]);
+  const [canales, setCanales] = useState(/** @type {string[]} */ ([]));
+  const [etapas, setEtapas] = useState(/** @type {string[]} */ ([]));
+  const [tiposContacto] = useState(/** @type {string[]} */ (["lead", "cliente"]));
+  const [estadosCalor] = useState(
+    /** @type {string[]} */ (["Lead frío", "Lead tibio", "Lead caliente"])
+  );
 
   // SISTEMA GLOBAL
-  const [columnasDisponibles, setColumnasDisponibles] = useState([]);
-  const [columnasGlobales, setColumnasGlobales] = useState([]);
-  const [etiquetas, setEtiquetas] = useState([]);
-  const [vistas, setVistas] = useState([]);
+  const [columnasDisponibles, setColumnasDisponibles] = useState(
+    /** @type {string[]} */ ([])
+  );
+  const [columnasGlobales, setColumnasGlobales] = useState(
+    /** @type {string[]} */ ([])
+  );
+  const [etiquetas, setEtiquetas] = useState(
+    /** @type {EtiquetaUI[]} */ ([])
+  );
+  const [vistas, setVistas] = useState(
+    /** @type {VistaUI[]} */ ([])
+  );
 
-  // --------------------------------------
-  // Carga inicial (defaults + localStorage)
-  // --------------------------------------
+  // Carga inicial
   useEffect(() => {
-    // Defaults
     setCanales(["WhatsApp", "Email", "Instagram"]);
     setEtapas(["Nuevo lead", "Contacto inicial", "En seguimiento", "Cliente"]);
     setColumnasDisponibles([
@@ -44,7 +77,6 @@ export function ConfigProvider({ children }) {
       "ultimoContactoEn",
     ]);
 
-    // Columnas globales
     const savedColumnas = localStorage.getItem("columnasGlobales");
     setColumnasGlobales(
       savedColumnas
@@ -52,11 +84,9 @@ export function ConfigProvider({ children }) {
         : ["nombre", "email", "telefono", "estadoGeneral"]
     );
 
-    // Etiquetas
     const savedEtiquetas = localStorage.getItem("etiquetas");
     setEtiquetas(savedEtiquetas ? JSON.parse(savedEtiquetas) : []);
 
-    // Vistas
     const savedVistas = localStorage.getItem("vistas");
     setVistas(savedVistas ? JSON.parse(savedVistas) : []);
   }, []);
@@ -74,9 +104,11 @@ export function ConfigProvider({ children }) {
     localStorage.setItem("vistas", JSON.stringify(vistas));
   }, [vistas]);
 
-  // CRUD Etiquetas (solo UI/local)
   const agregarEtiqueta = (nombre) => {
-    setEtiquetas((prev) => [...prev, { id: Date.now(), nombre }]);
+    setEtiquetas((prev) => [
+      ...prev,
+      { id: Date.now(), nombre: nombre.trim() },
+    ]);
   };
 
   const renombrarEtiqueta = (id, nuevoNombre) => {
@@ -89,13 +121,14 @@ export function ConfigProvider({ children }) {
     setEtiquetas((prev) => prev.filter((e) => e.id !== id));
   };
 
-  // CRUD Vistas (solo UI/local)
   const guardarVista = (vista) => {
-    if (vista.id) {
-      setVistas((prev) => prev.map((v) => (v.id === vista.id ? vista : v)));
-    } else {
-      setVistas((prev) => [...prev, { ...vista, id: Date.now() }]);
-    }
+    setVistas((prev) => {
+      if (vista.id) {
+        return prev.map((v) => (v.id === vista.id ? { ...v, ...vista } : v));
+      }
+      const nueva = { ...vista, id: Date.now() };
+      return [...prev, /** @type {VistaUI} */ (nueva)];
+    });
   };
 
   const eliminarVista = (id) => {
@@ -105,24 +138,17 @@ export function ConfigProvider({ children }) {
   return (
     <ConfigContext.Provider
       value={{
-        // CONTACTOS
         canales,
         etapas,
         tiposContacto,
         estadosCalor,
-
-        // COLUMNAS
         columnasDisponibles,
         columnasGlobales,
         setColumnasGlobales,
-
-        // ETIQUETAS
         etiquetas,
         agregarEtiqueta,
         renombrarEtiqueta,
         eliminarEtiqueta,
-
-        // VISTAS
         vistas,
         guardarVista,
         eliminarVista,
@@ -134,5 +160,9 @@ export function ConfigProvider({ children }) {
 }
 
 export function useConfig() {
-  return useContext(ConfigContext);
+  const ctx = useContext(ConfigContext);
+  if (!ctx) {
+    throw new Error("useConfig debe usarse dentro de ConfigProvider");
+  }
+  return ctx;
 }

@@ -8,24 +8,26 @@ import {
 } from "../api/clienteApi.js";
 
 /**
- * LeadContext:
- * - Representa "leads" como clientes con tipo === "lead".
- * - Usa ClienteController y Cliente*Request/Response del backend.
+ * @typedef {import("../api/types.js").ClienteResponse} ClienteResponse
+ * @typedef {import("../api/types.js").ClienteCreateRequest} ClienteCreateRequest
+ * @typedef {import("../api/types.js").ClienteUpdateRequest} ClienteUpdateRequest
  */
 
 const LeadContext = createContext(null);
 
 export function LeadProvider({ children }) {
-  const [leads, setLeads] = useState([]);
+  const [leads, setLeads] = useState(
+    /** @type {ClienteResponse[]} */ ([]),
+  );
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(/** @type {string | null} */ (null));
 
   const cargarLeads = async () => {
     try {
       setLoading(true);
       setError(null);
       const clientes = await listClientes();
-      const soloLeads = clientes.filter((c) => c.tipo === "lead");
+      const soloLeads = (clientes || []).filter((c) => c.tipo === "lead");
       setLeads(soloLeads);
     } catch (err) {
       console.error("Error al cargar leads", err);
@@ -41,56 +43,45 @@ export function LeadProvider({ children }) {
   }, []);
 
   /**
-   * agregarLead:
-   * espera un objeto compatible con ClienteCreateRequest,
-   * pero fuerza tipo = "lead" y estadoGeneral por defecto.
-   *
-   * ej:
-   * agregarLead({
-   *   nombre, email, telefono, origen, etapaFunnelId, propietarioId
-   * })
+   * Crear lead (ClienteCreateRequest con tipo="lead").
+   * @param {Partial<ClienteCreateRequest> & { nombre: string, email: string, telefono: string, propietarioId: number }} nuevo
    */
   const agregarLead = async (nuevo) => {
-    try {
-      const payload = {
-        nombre: nuevo.nombre,
-        email: nuevo.email,
-        telefono: nuevo.telefono,
-        tipo: "lead",
-        estadoGeneral: nuevo.estadoGeneral || "en_seguimiento",
-        etapaFunnelId: nuevo.etapaFunnelId ?? null,
-        propietarioId: nuevo.propietarioId,
-        origen: nuevo.origen || "manual",
-      };
+    /** @type {ClienteCreateRequest} */
+    const payload = {
+      nombre: nuevo.nombre,
+      email: nuevo.email,
+      telefono: nuevo.telefono,
+      tipo: "lead",
+      estadoGeneral: nuevo.estadoGeneral || "en_seguimiento",
+      etapaFunnelId: nuevo.etapaFunnelId ?? null,
+      propietarioId: nuevo.propietarioId,
+      origen: nuevo.origen || "manual",
+    };
 
-      const creado = await createCliente(payload);
-      setLeads((prev) => [...prev, creado]);
-    } catch (err) {
-      console.error("Error al crear lead", err);
-      throw err;
-    }
+    const creado = await createCliente(payload);
+    setLeads((prev) => [...prev, creado]);
+    return creado;
   };
 
+  /**
+   * Editar lead.
+   * @param {number} id
+   * @param {ClienteUpdateRequest} cambios
+   */
   const editarLead = async (id, cambios) => {
-    try {
-      const actualizado = await updateCliente(id, cambios);
-      setLeads((prev) =>
-        prev.map((l) => (l.id === id ? actualizado : l))
-      );
-    } catch (err) {
-      console.error("Error al editar lead", err);
-      throw err;
-    }
+    const actualizado = await updateCliente(id, cambios);
+    setLeads((prev) => prev.map((l) => (l.id === id ? actualizado : l)));
+    return actualizado;
   };
 
+  /**
+   * Eliminar lead.
+   * @param {number} id
+   */
   const eliminarLead = async (id) => {
-    try {
-      await deleteCliente(id);
-      setLeads((prev) => prev.filter((l) => l.id !== id));
-    } catch (err) {
-      console.error("Error al eliminar lead", err);
-      throw err;
-    }
+    await deleteCliente(id);
+    setLeads((prev) => prev.filter((l) => l.id !== id));
   };
 
   return (
@@ -111,5 +102,9 @@ export function LeadProvider({ children }) {
 }
 
 export function useLeads() {
-  return useContext(LeadContext);
+  const ctx = useContext(LeadContext);
+  if (!ctx) {
+    throw new Error("useLeads debe usarse dentro de <LeadProvider>");
+  }
+  return ctx;
 }
