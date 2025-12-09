@@ -2,165 +2,156 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useLeads } from "../../context/leadcontext";
 import { useAuth } from "../../context/authcontext.jsx";
+import { useLeads } from "../../context/leadcontext.jsx";
 
-import Recientes from "./Recientes";
-import ListaContactos from "./ListaContactos";
-import ModalAgregar from "./modalAgregar";
-import ModalEditar from "./ModalEditar";
-import ModalEliminar from "./ModalEliminar";
-import ModalEtapa from "./ModalEtapa";
+import { useContactosFiltrados } from "../../hooks/useContactosFiltrados.js";
+import { normalizarTipoContacto } from "../../utils/contactos.js";
+import { showToast } from "../../utils/toast.js";
 
-import { showToast } from "../../utils/toast";
+import ContactosBusquedaBar from "../../components/contactos/ContactosBusquedaBar.jsx";
+import ContactosRecientes from "../../components/contactos/ContactosRecientes.jsx";
+import ContactosLista from "../../components/contactos/ContactosLista.jsx";
+import ContactoNuevoModal from "../../components/contactos/ContactoNuevoModal.jsx";
+import ContactoEditModal from "../../components/contactos/ContactoEditModal.jsx";
+import ContactoDeleteModal from "../../components/contactos/ContactoDeleteModal.jsx";
+import ContactoEstadoModal from "../../components/contactos/ContactoEstadoModal.jsx";
 
-function Contactos() {
+/**
+ * Página principal de contactos (leads + clientes).
+ * Orquesta contextos, filtros y modales.
+ */
+export default function Contactos() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // leads = array de ClienteResponse del backend
-  const { leads = [], agregarLead, editarLead, eliminarLead } = useLeads();
+  const {
+    contactos,
+    leads,
+    loading,
+    error,
+    crearContacto,
+    actualizarContacto,
+    eliminarContacto,
+  } = useLeads();
 
   const [busqueda, setBusqueda] = useState("");
 
   const [modalAgregar, setModalAgregar] = useState(false);
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
-  const [modalEtapa, setModalEtapa] = useState(false);
+  const [modalEstado, setModalEstado] = useState(false);
 
+  /** @type {[import("../../api/types.js").ClienteResponse | null, Function]} */
   const [contactoSeleccionado, setContactoSeleccionado] = useState(null);
 
   // Mientras no tengas user.id, uso 1 como demo
   const propietarioId = user?.id ?? 1;
 
-  // --------------------------------------------
-  // FILTRO DE BÚSQUEDA (sobre ClienteResponse)
-  // --------------------------------------------
-  const leadsFiltrados = useMemo(() => {
-    const texto = busqueda.trim().toLowerCase();
-    if (!texto) return leads;
+  // Filtro de búsqueda
+  const contactosFiltrados = useContactosFiltrados(contactos, busqueda);
 
-    return leads.filter((c) => {
-      const hay = [
-        c.nombre,
-        c.email,
-        c.telefono,
-        c.origen,
-        c.propietarioNombre,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return hay.includes(texto);
-    });
-  }, [leads, busqueda]);
-
-  // --------------------------------------------
-  // ORDENAR RECIENTES POR creadoEn DESC
-  // --------------------------------------------
+  // Ordenar por creadoEn DESC para "recientes"
   const recientesOrdenados = useMemo(
     () =>
-      [...leadsFiltrados].sort((a, b) => {
+      [...contactosFiltrados].sort((a, b) => {
         const fa = a.creadoEn ? new Date(a.creadoEn).getTime() : 0;
         const fb = b.creadoEn ? new Date(b.creadoEn).getTime() : 0;
         return fb - fa;
       }),
-    [leadsFiltrados]
+    [contactosFiltrados],
   );
 
   const contactosRecientes = recientesOrdenados;
   const leadsRecientes = recientesOrdenados.filter(
-    (c) => c.tipo && c.tipo.toLowerCase() === "lead"
+    (c) => (c.tipo || "").toLowerCase() === "lead",
   );
 
-  // --------------------------------------------
-  // AGREGAR CONTACTO (ClienteCreateRequest)
-  // Espera que ModalAgregar pase: {nombre,email,telefono,tipo?,estadoGeneral?,etapaFunnelId?,origen?}
-  // --------------------------------------------
+  // CREAR CONTACTO
   const guardarNuevoContacto = async (nuevo) => {
     try {
-      await agregarLead({
+      await crearContacto({
         nombre: nuevo.nombre,
         email: nuevo.email,
         telefono: nuevo.telefono,
-        tipo: nuevo.tipo || "lead",
-        estadoGeneral: nuevo.estadoGeneral || "en_seguimiento",
-        etapaFunnelId: nuevo.etapaFunnelId ?? null,
+        tipo: normalizarTipoContacto(nuevo.tipo),
+        estadoGeneral: "en_seguimiento",
+        etapaFunnelId: null,
         propietarioId,
         origen: nuevo.origen || nuevo.canal || "manual",
       });
 
       showToast("Contacto agregado correctamente ✔", "success");
       setModalAgregar(false);
-    } catch (error) {
-      console.error("[Contactos] Error al crear contacto", error);
+    } catch (errorCrear) {
+      console.error("[Contactos] Error al crear contacto", errorCrear);
       showToast("No se pudo crear el contacto", "danger");
     }
   };
 
-  // --------------------------------------------
-  // EDITAR CONTACTO (ClienteUpdateRequest)
-  // ModalEditar debería recibir y devolver campos compatibles
-  // --------------------------------------------
-  const guardarEdicion = async (editado) => {
+  // EDITAR CONTACTO
+  const guardarEdicion = async (form) => {
     if (!contactoSeleccionado) return;
 
     try {
-      await editarLead(contactoSeleccionado.id, {
-        nombre: editado.nombre,
-        email: editado.email,
-        telefono: editado.telefono,
-        tipo: editado.tipo,
-        estadoGeneral: editado.estadoGeneral,
-        etapaFunnelId: editado.etapaFunnelId,
-        propietarioId: editado.propietarioId ?? propietarioId,
-        origen: editado.origen,
+      await actualizarContacto(contactoSeleccionado.id, {
+        nombre: form.nombre,
+        tipo: normalizarTipoContacto(form.tipoContacto),
+        // Podrías mapear canal → origen aquí si lo necesitás.
+        // origen: form.canal || contactoSeleccionado.origen,
       });
 
       showToast("Contacto editado correctamente ✔", "info");
       setModalEditar(false);
-    } catch (error) {
-      console.error("[Contactos] Error al editar contacto", error);
+    } catch (errorEditar) {
+      console.error("[Contactos] Error al editar contacto", errorEditar);
       showToast("No se pudo editar el contacto", "danger");
     }
   };
 
-  // --------------------------------------------
   // ELIMINAR CONTACTO
-  // --------------------------------------------
-  const eliminarContacto = async () => {
+  const eliminarContactoHandler = async () => {
     if (!contactoSeleccionado) return;
 
     try {
-      await eliminarLead(contactoSeleccionado.id);
+      await eliminarContacto(contactoSeleccionado.id);
       showToast("Contacto eliminado ❌", "danger");
       setModalEliminar(false);
-    } catch (error) {
-      console.error("[Contactos] Error al eliminar contacto", error);
+    } catch (errorEliminar) {
+      console.error("[Contactos] Error al eliminar contacto", errorEliminar);
       showToast("No se pudo eliminar el contacto", "danger");
     }
   };
 
-  // --------------------------------------------
-  // CAMBIAR ESTADO GENERAL (en lugar de 'etapa' inventada)
-  // ModalEtapa debería devolver: 'activo' | 'en_seguimiento' | 'perdido'
-  // --------------------------------------------
-  const guardarEtapa = async (nuevoEstadoGeneral) => {
+  // CAMBIAR ESTADO GENERAL
+  const guardarEstadoGeneral = async (nuevoEstadoGeneral) => {
     if (!contactoSeleccionado) return;
 
     try {
-      await editarLead(contactoSeleccionado.id, {
+      await actualizarContacto(contactoSeleccionado.id, {
         estadoGeneral: nuevoEstadoGeneral,
       });
 
       showToast("Estado actualizado ✔", "info");
-      setModalEtapa(false);
-    } catch (error) {
-      console.error("[Contactos] Error al actualizar estado", error);
+      setModalEstado(false);
+    } catch (errorEstado) {
+      console.error("[Contactos] Error al actualizar estado", errorEstado);
       showToast("No se pudo actualizar el estado", "danger");
     }
   };
+
+  // Navegación a módulo de mensajes
+  const irAConversaciones = (c) => {
+    navigate(
+      `/mensajes?contacto=${encodeURIComponent(
+        c.nombre,
+      )}&canal=${encodeURIComponent(c.origen || "WhatsApp")}`,
+    );
+  };
+
+  if (loading) {
+    return <p className="p-4">Cargando contactos…</p>;
+  }
 
   return (
     <div className="container-fluid py-4">
@@ -175,28 +166,28 @@ function Contactos() {
         <p className="text-muted">Gestión unificada de leads y clientes.</p>
       </header>
 
+      {error && (
+        <div className="alert alert-danger my-3">
+          {error}
+        </div>
+      )}
+
       {/* BUSCADOR + BOTÓN */}
-      <section className="d-flex justify-content-between mb-4">
-        <input
-          className="form-control w-50"
-          type="text"
-          placeholder="Buscar por nombre, email, teléfono u origen..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-        />
+      <ContactosBusquedaBar
+        busqueda={busqueda}
+        onBusquedaChange={setBusqueda}
+        onNuevoContacto={() => setModalAgregar(true)}
+      />
 
-        <button className="btn btn-dark" onClick={() => setModalAgregar(true)}>
-          + Nuevo contacto
-        </button>
-      </section>
-
-      {/* RECIENTES (usa ClienteResponse tal cual) */}
-      <Recientes contactos={contactosRecientes} leads={leadsRecientes} />
+      {/* RECIENTES */}
+      <ContactosRecientes
+        contactos={contactosRecientes}
+        leads={leadsRecientes}
+      />
 
       {/* LISTA GENERAL */}
-      <ListaContactos
-        contactos={leadsFiltrados}
-        navigate={navigate}
+      <ContactosLista
+        contactos={contactosFiltrados}
         onVer={(c) => navigate(`/contactos/${c.id}`)}
         onEditar={(c) => {
           setContactoSeleccionado(c);
@@ -206,22 +197,23 @@ function Contactos() {
           setContactoSeleccionado(c);
           setModalEliminar(true);
         }}
-        onCambiarEtapa={(c) => {
+        onEnviarMensaje={(c) => irAConversaciones(c)}
+        onCambiarEstado={(c) => {
           setContactoSeleccionado(c);
-          setModalEtapa(true);
+          setModalEstado(true);
         }}
       />
 
       {/* MODALES */}
       {modalAgregar && (
-        <ModalAgregar
+        <ContactoNuevoModal
           onClose={() => setModalAgregar(false)}
           onSave={guardarNuevoContacto}
         />
       )}
 
       {modalEditar && contactoSeleccionado && (
-        <ModalEditar
+        <ContactoEditModal
           contacto={contactoSeleccionado}
           onClose={() => setModalEditar(false)}
           onSave={guardarEdicion}
@@ -229,22 +221,20 @@ function Contactos() {
       )}
 
       {modalEliminar && contactoSeleccionado && (
-        <ModalEliminar
+        <ContactoDeleteModal
           contacto={contactoSeleccionado}
           onClose={() => setModalEliminar(false)}
-          onDelete={eliminarContacto}
+          onDelete={eliminarContactoHandler}
         />
       )}
 
-      {modalEtapa && contactoSeleccionado && (
-        <ModalEtapa
+      {modalEstado && contactoSeleccionado && (
+        <ContactoEstadoModal
           contacto={contactoSeleccionado}
-          onClose={() => setModalEtapa(false)}
-          onSave={guardarEtapa}
+          onClose={() => setModalEstado(false)}
+          onSave={guardarEstadoGeneral}
         />
       )}
     </div>
   );
 }
-
-export default Contactos;

@@ -1,22 +1,34 @@
-// src/pages/Contactos/ModalEditar.jsx
-import React, { useState, useEffect } from "react";
+// src/components/contactos/ContactoEditModal.jsx
+import React, { useEffect, useState } from "react";
 import { useConfig } from "../../context/configcontext.jsx";
 
-function ModalEditar({ contacto, onClose, onSave }) {
+/**
+ * @typedef {Object} ContactoEditForm
+ * @property {string} nombre
+ * @property {string} canal
+ * @property {string} etapa
+ * @property {string} tipoContacto
+ * @property {string} estadoCalor
+ */
 
-  // Configuración del CRM
+/**
+ * @param {{
+ *   contacto: any,
+ *   onClose: () => void,
+ *   onSave: (form: ContactoEditForm) => void,
+ * }} props
+ */
+export default function ContactoEditModal({ contacto, onClose, onSave }) {
   const { canales, etapas, tiposContacto, estadosCalor } = useConfig();
 
-  // Formulario interno
   const [form, setForm] = useState({
     nombre: "",
     canal: "",
     etapa: "",
     tipoContacto: "",
-    estadoCalor: ""
+    estadoCalor: "",
   });
 
-  // Cargar datos cuando la config y contacto existan
   useEffect(() => {
     if (!contacto) return;
 
@@ -25,37 +37,37 @@ function ModalEditar({ contacto, onClose, onSave }) {
       canal: contacto.canal || canales[0] || "",
       etapa: contacto.etapa || etapas[0] || "",
       tipoContacto: contacto.tipoContacto || tiposContacto[0] || "",
-      estadoCalor: contacto.estadoCalor || estadosCalor[0] || ""
+      estadoCalor: contacto.estadoCalor || estadosCalor[0] || "",
     });
   }, [contacto, canales, etapas, tiposContacto, estadosCalor]);
 
-  // Manejar cambios
   const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
 
-  // Guardar cambios
   const guardar = () => {
     if (!form.nombre.trim()) {
       alert("El nombre es obligatorio");
       return;
     }
-
     onSave(form);
-    onClose();
   };
 
   return (
-    <div className="modal fade show d-block" style={{ background: "#00000090" }}>
+    <div
+      className="modal fade show d-block"
+      style={{ background: "#00000090" }}
+    >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content shadow">
-
           <div className="modal-header">
             <h5 className="modal-title">Editar contacto</h5>
             <button className="btn-close" onClick={onClose}></button>
           </div>
 
           <div className="modal-body">
-
             {/* Nombre */}
             <label className="form-label">Nombre</label>
             <input
@@ -79,7 +91,7 @@ function ModalEditar({ contacto, onClose, onSave }) {
             </select>
 
             {/* Etapa */}
-            <label className="form-label">Etapa</label>
+            <label className="form-label">Etapa (visual)</label>
             <select
               name="etapa"
               className="form-select mb-3"
@@ -116,7 +128,6 @@ function ModalEditar({ contacto, onClose, onSave }) {
                 <option key={e}>{e}</option>
               ))}
             </select>
-
           </div>
 
           <div className="modal-footer">
@@ -128,11 +139,8 @@ function ModalEditar({ contacto, onClose, onSave }) {
               Guardar cambios
             </button>
           </div>
-
         </div>
       </div>
     </div>
   );
 }
-
-export default ModalEditar;

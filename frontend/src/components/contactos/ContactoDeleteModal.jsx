@@ -1,7 +1,14 @@
-// src/pages/Contactos/ModalEliminar.jsx
+// src/components/contactos/ContactoDeleteModal.jsx
 import React from "react";
 
-function ModalEliminar({ contacto, onClose, onDelete }) {
+/**
+ * @param {{
+ *   contacto: { nombre?: string } | null,
+ *   onClose: () => void,
+ *   onDelete: () => void,
+ * }} props
+ */
+export default function ContactoDeleteModal({ contacto, onClose, onDelete }) {
   return (
     <div
       className="modal fade show d-block"
@@ -9,7 +16,6 @@ function ModalEliminar({ contacto, onClose, onDelete }) {
     >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content shadow">
-          
           <div className="modal-header">
             <h5 className="modal-title text-danger">Eliminar contacto</h5>
             <button className="btn-close" onClick={onClose} />
@@ -32,19 +38,13 @@ function ModalEliminar({ contacto, onClose, onDelete }) {
 
             <button
               className="btn btn-danger"
-              onClick={() => {
-                onDelete();
-                onClose();
-              }}
+              onClick={onDelete}
             >
               Eliminar
             </button>
           </div>
-
         </div>
       </div>
     </div>
   );
 }
-
-export default ModalEliminar;

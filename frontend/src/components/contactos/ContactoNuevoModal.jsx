@@ -1,18 +1,25 @@
-// src/pages/Contactos/ModalAgregar.jsx
-import React, { useState, useEffect } from "react";
+// src/components/contactos/ContactoNuevoModal.jsx
+import React, { useEffect, useState } from "react";
 import { useConfig } from "../../context/configcontext.jsx";
 
 /**
- * ModalAgregar
- *
- * Responsabilidad:
- * - Mostrar formulario para crear un contacto.
- * - Recoger datos básicos (nombre, email, teléfono) + metadata (canal, etapa, tipoContacto, estadoCalor, origen).
- * - Normalizar lo mínimo (ej: tipo "lead"/"cliente") y delegar en onSave.
- *
- * No llama al backend directamente: delega en el padre (Contactos).
+ * @param {{
+ *   onClose: () => void,
+ *   onSave: (payload: {
+ *     nombre: string,
+ *     email: string,
+ *     telefono: string,
+ *     canal: string,
+ *     etapa: string,
+ *     tipoContacto: string,
+ *     estadoCalor: string,
+ *     origen: string,
+ *     creadoEn: string,
+ *     tipo?: string,
+ *   }) => void,
+ * }} props
  */
-export default function ModalAgregar({ onClose, onSave }) {
+export default function ContactoNuevoModal({ onClose, onSave }) {
   const { canales, etapas, tiposContacto, estadosCalor } = useConfig();
 
   const [form, setForm] = useState({
@@ -27,14 +34,13 @@ export default function ModalAgregar({ onClose, onSave }) {
     creadoEn: new Date().toISOString(),
   });
 
-  // Setear valores iniciales cuando existan opciones
   useEffect(() => {
     setForm((prev) => ({
       ...prev,
-      canal: prev.canal || (canales[0] || ""),
-      etapa: prev.etapa || (etapas[0] || ""),
-      tipoContacto: prev.tipoContacto || (tiposContacto[0] || "Lead"),
-      estadoCalor: prev.estadoCalor || (estadosCalor[0] || "Lead frío"),
+      canal: prev.canal || canales[0] || "",
+      etapa: prev.etapa || etapas[0] || "",
+      tipoContacto: prev.tipoContacto || tiposContacto[0] || "Lead",
+      estadoCalor: prev.estadoCalor || estadosCalor[0] || "Lead frío",
     }));
   }, [canales, etapas, tiposContacto, estadosCalor]);
 
@@ -62,19 +68,13 @@ export default function ModalAgregar({ onClose, onSave }) {
       return;
     }
 
-    // Normalizar tipo para el backend: "lead" / "cliente"
-    const tipoNormalizado =
-      form.tipoContacto?.toLowerCase() === "cliente" ? "cliente" : "lead";
-
-    const payload = {
+    onSave({
       ...form,
-      tipo: tipoNormalizado,
-      // estadoGeneral lo podés setear acá o dejar que el padre use su default
-      // estadoGeneral: "en_seguimiento",
-    };
-
-    // Delega en el padre (Contactos) → este arma ClienteCreateRequest
-    onSave(payload);
+      tipo:
+        form.tipoContacto?.toLowerCase() === "cliente"
+          ? "cliente"
+          : "lead",
+    });
   };
 
   return (
@@ -86,7 +86,7 @@ export default function ModalAgregar({ onClose, onSave }) {
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">Agregar Contacto</h5>
+            <h5 className="modal-title">Agregar contacto</h5>
             <button className="btn-close" onClick={onClose}></button>
           </div>
 

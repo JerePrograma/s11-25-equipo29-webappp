@@ -1,5 +1,11 @@
 // src/context/leadcontext.jsx
-import { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   listClientes,
   createCliente,
@@ -13,96 +19,102 @@ import {
  * @typedef {import("../api/types.js").ClienteUpdateRequest} ClienteUpdateRequest
  */
 
-const LeadContext = createContext(null);
+const ContactosContext = createContext(null);
 
 export function LeadProvider({ children }) {
-  const [leads, setLeads] = useState(
+  const [contactos, setContactos] = useState(
     /** @type {ClienteResponse[]} */ ([]),
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(/** @type {string | null} */ (null));
 
-  const cargarLeads = async () => {
+  const cargarContactos = async () => {
     try {
       setLoading(true);
       setError(null);
-      const clientes = await listClientes();
-      const soloLeads = (clientes || []).filter((c) => c.tipo === "lead");
-      setLeads(soloLeads);
+      const data = await listClientes();
+      setContactos(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Error al cargar leads", err);
-      setError("No se pudieron cargar los leads.");
-      setLeads([]);
+      console.error("Error al cargar contactos", err);
+      setError("No se pudieron cargar los contactos.");
+      setContactos([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    cargarLeads();
+    cargarContactos();
   }, []);
 
-  /**
-   * Crear lead (ClienteCreateRequest con tipo="lead").
-   * @param {Partial<ClienteCreateRequest> & { nombre: string, email: string, telefono: string, propietarioId: number }} nuevo
-   */
-  const agregarLead = async (nuevo) => {
-    /** @type {ClienteCreateRequest} */
-    const payload = {
-      nombre: nuevo.nombre,
-      email: nuevo.email,
-      telefono: nuevo.telefono,
-      tipo: "lead",
-      estadoGeneral: nuevo.estadoGeneral || "en_seguimiento",
-      etapaFunnelId: nuevo.etapaFunnelId ?? null,
-      propietarioId: nuevo.propietarioId,
-      origen: nuevo.origen || "manual",
-    };
+  const leads = useMemo(
+    () => contactos.filter((c) => (c.tipo || "").toLowerCase() === "lead"),
+    [contactos],
+  );
 
+  const clientes = useMemo(
+    () => contactos.filter((c) => (c.tipo || "").toLowerCase() === "cliente"),
+    [contactos],
+  );
+
+  /**
+   * Crear contacto (lead o cliente).
+   * @param {ClienteCreateRequest} payload
+   * @returns {Promise<ClienteResponse>}
+   */
+  const crearContacto = async (payload) => {
     const creado = await createCliente(payload);
-    setLeads((prev) => [...prev, creado]);
+    setContactos((prev) => [...prev, creado]);
     return creado;
   };
 
   /**
-   * Editar lead.
+   * Actualizar contacto.
    * @param {number} id
    * @param {ClienteUpdateRequest} cambios
+   * @returns {Promise<ClienteResponse>}
    */
-  const editarLead = async (id, cambios) => {
+  const actualizarContacto = async (id, cambios) => {
     const actualizado = await updateCliente(id, cambios);
-    setLeads((prev) => prev.map((l) => (l.id === id ? actualizado : l)));
+    setContactos((prev) =>
+      prev.map((c) => (c.id === id ? actualizado : c)),
+    );
     return actualizado;
   };
 
   /**
-   * Eliminar lead.
+   * Eliminar contacto.
    * @param {number} id
    */
-  const eliminarLead = async (id) => {
+  const eliminarContacto = async (id) => {
     await deleteCliente(id);
-    setLeads((prev) => prev.filter((l) => l.id !== id));
+    setContactos((prev) => prev.filter((c) => c.id !== id));
   };
 
   return (
-    <LeadContext.Provider
+    <ContactosContext.Provider
       value={{
+        contactos,
         leads,
+        clientes,
         loading,
         error,
-        cargarLeads,
-        agregarLead,
-        editarLead,
-        eliminarLead,
+        recargar: cargarContactos,
+        crearContacto,
+        actualizarContacto,
+        eliminarContacto,
       }}
     >
       {children}
-    </LeadContext.Provider>
+    </ContactosContext.Provider>
   );
 }
 
+/**
+ * Hook principal de contactos/leads.
+ */
 export function useLeads() {
-  const ctx = useContext(LeadContext);
+  const ctx = useContext(ContactosContext);
   if (!ctx) {
     throw new Error("useLeads debe usarse dentro de <LeadProvider>");
   }

@@ -1,7 +1,18 @@
-// src/pages/Contactos/Recientes.jsx
+// src/components/contactos/ContactosRecientes.jsx
 import React from "react";
+import { tipoContactoLegible } from "../../utils/contactos.js";
 
-function Recientes({ contactos = [], leads = [] }) {
+/**
+ * @typedef {import("../../api/types.js").ClienteResponse} ClienteResponse
+ */
+
+/**
+ * @param {{
+ *   contactos: ClienteResponse[],
+ *   leads: ClienteResponse[],
+ * }} props
+ */
+export default function ContactosRecientes({ contactos = [], leads = [] }) {
   const contactosSeguros = Array.isArray(contactos) ? contactos : [];
   const leadsSeguros = Array.isArray(leads) ? leads : [];
 
@@ -17,14 +28,6 @@ function Recientes({ contactos = [], leads = [] }) {
     }
   };
 
-  const formatTipoContacto = (tipo) => {
-    if (!tipo) return "Contacto";
-    const t = tipo.toLowerCase();
-    if (t === "lead") return "Lead";
-    if (t === "cliente") return "Cliente";
-    return tipo;
-  };
-
   return (
     <section className="row mb-4">
       {/* CONTACTOS RECIENTES */}
@@ -37,7 +40,6 @@ function Recientes({ contactos = [], leads = [] }) {
           contactosRecientes.map((c) => (
             <div key={c.id} className="card mb-2 shadow-sm border-0">
               <div className="card-body d-flex justify-content-between align-items-center">
-                {/* DATOS */}
                 <div>
                   <h6 className="mb-1">{c.nombre}</h6>
                   <small className="text-muted">
@@ -45,13 +47,12 @@ function Recientes({ contactos = [], leads = [] }) {
                   </small>
                 </div>
 
-                {/* BADGES */}
                 <div className="d-flex gap-2">
                   <span className="badge bg-primary">
                     {c.etapaFunnelNombre || "Sin etapa"}
                   </span>
                   <span className="badge bg-dark">
-                    {formatTipoContacto(c.tipo)}
+                    {tipoContactoLegible(c.tipo)}
                   </span>
                 </div>
               </div>
@@ -84,7 +85,7 @@ function Recientes({ contactos = [], leads = [] }) {
                     {lead.etapaFunnelNombre || "Sin etapa"}
                   </span>
                   <span className="badge bg-dark">
-                    {formatTipoContacto(lead.tipo) || "Lead"}
+                    {tipoContactoLegible(lead.tipo) || "Lead"}
                   </span>
                 </div>
               </div>
@@ -95,5 +96,3 @@ function Recientes({ contactos = [], leads = [] }) {
     </section>
   );
 }
-
-export default Recientes;
