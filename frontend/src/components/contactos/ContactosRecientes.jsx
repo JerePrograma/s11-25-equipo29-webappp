@@ -1,4 +1,4 @@
-// src/components/contactos/ContactosRecientes.jsx
+// src/components/contactos/Recientes.jsx
 import React from "react";
 import { tipoContactoLegible } from "../../utils/contactos.js";
 
@@ -12,11 +12,11 @@ import { tipoContactoLegible } from "../../utils/contactos.js";
  *   leads: ClienteResponse[],
  * }} props
  */
-export default function ContactosRecientes({ contactos = [], leads = [] }) {
+export default function Recientes({ contactos = [], leads = [] }) {
   const contactosSeguros = Array.isArray(contactos) ? contactos : [];
   const leadsSeguros = Array.isArray(leads) ? leads : [];
 
-  const contactosRecientes = contactosSeguros.slice(0, 3);
+  const Recientes = contactosSeguros.slice(0, 3);
   const leadsRecientes = leadsSeguros.slice(0, 3);
 
   const formatFecha = (iso) => {
@@ -34,10 +34,10 @@ export default function ContactosRecientes({ contactos = [], leads = [] }) {
       <div className="col-md-6 mb-3">
         <h5 className="mb-3">Contactos recientes</h5>
 
-        {contactosRecientes.length === 0 ? (
+        {Recientes.length === 0 ? (
           <p className="text-muted small">No hay contactos recientes.</p>
         ) : (
-          contactosRecientes.map((c) => (
+          Recientes.map((c) => (
             <div key={c.id} className="card mb-2 shadow-sm border-0">
               <div className="card-body d-flex justify-content-between align-items-center">
                 <div>

@@ -1,24 +1,19 @@
 // src/pages/roles/RolesPage.jsx
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useAuth } from "../../context/authcontext.jsx";
 import { useRoles } from "../../context/rolescontext.jsx";
-
-import { useRolesFiltrados } from "../../hooks/useRolesFiltrados.js";
-import RolesBusquedaBar from "../../components/roles/RolesBusquedaBar.jsx";
-import RolesTabla from "../../components/roles/RolesTabla.jsx";
-import RolNuevoModal from "../../components/roles/RolNuevoModal.jsx";
-import RolEditarModal from "../../components/roles/RolEditarModal.jsx";
-import RolEliminarModal from "../../components/roles/RolEliminarModal.jsx";
-import { showToast } from "../../utils/toast.js";
+import { showToast } from "../../utils/toast";
 
 /**
- * Page: Roles
- * - Usa RolesContext + AuthContext.
- * - Listado + filtro + ABM de roles (solo admin).
+ * Administración de roles:
+ * - Lista roles (RolResponse).
+ * - Crear rol.
+ * - Editar descripción/permisos.
+ * - Eliminar rol.
  */
 export default function RolesPage() {
-  const { user } = useAuth();
-  const esAdmin = (user?.role || "").toLowerCase() === "admin";
+  const { user: authUser } = useAuth();
+  const esAdmin = (authUser?.role || "").toLowerCase() === "admin";
 
   const {
     roles,
@@ -26,185 +21,402 @@ export default function RolesPage() {
     error,
     crearRol,
     editarRol,
-    recargar,
     eliminarRol,
   } = useRoles();
 
   const [busqueda, setBusqueda] = useState("");
-  const [modalNuevo, setModalNuevo] = useState(false);
+
+  const [modalAgregar, setModalAgregar] = useState(false);
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
 
-  /** @type {[import("../../api/types.js").RolResponse | null, Function]} */
   const [rolSeleccionado, setRolSeleccionado] = useState(null);
 
-  const rolesFiltrados = useRolesFiltrados(roles, busqueda);
+  const [nuevoRol, setNuevoRol] = useState({
+    nombre: "",
+    descripcion: "",
+    permisosJson: "{}",
+  });
 
-  // ---------------------------
-  // Handlers
-  // ---------------------------
+  const [editarForm, setEditarForm] = useState({
+    descripcion: "",
+    permisosJson: "",
+  });
 
-  /**
-   * @param {import("../../components/roles/RolNuevoModal.jsx").RolNuevoForm} form
-   */
-  const handleGuardarNuevoRol = async (form) => {
+  if (!esAdmin) {
+    return (
+      <div className="container py-4">
+        <h1 className="h4 fw-bold mb-2">Roles</h1>
+        <p className="text-muted">
+          No tenés permisos para administrar roles.
+        </p>
+      </div>
+    );
+  }
+
+  const rolesFiltrados = useMemo(() => {
+    const txt = busqueda.trim().toLowerCase();
+    if (!txt) return roles;
+
+    return roles.filter((r) => {
+      const hay = `${r.nombre || ""} ${r.descripcion || ""}`.toLowerCase();
+      return hay.includes(txt);
+    });
+  }, [roles, busqueda]);
+
+  const abrirModalAgregar = () => {
+    setNuevoRol({
+      nombre: "",
+      descripcion: "",
+      permisosJson: "{}",
+    });
+    setModalAgregar(true);
+  };
+
+  const guardarNuevoRol = async () => {
     try {
+      if (!nuevoRol.nombre.trim()) {
+        alert("El nombre del rol es obligatorio");
+        return;
+      }
+
       await crearRol({
-        nombre: form.nombre,
-        descripcion: form.descripcion,
-        permisosJson: form.permisosJson,
+        nombre: nuevoRol.nombre.trim(),
+        descripcion: nuevoRol.descripcion.trim(),
+        permisosJson: nuevoRol.permisosJson || "{}",
       });
 
       showToast("Rol creado correctamente ✔", "success");
-      setModalNuevo(false);
+      setModalAgregar(false);
     } catch (err) {
       console.error("[Roles] Error creando rol", err);
       showToast("No se pudo crear el rol", "danger");
     }
   };
 
-  /**
-   * @param {import("../../components/roles/RolEditarModal.jsx").RolEditarForm} form
-   */
-  const handleGuardarEdicionRol = async (form) => {
+  const abrirModalEditar = (rol) => {
+    setRolSeleccionado(rol);
+    setEditarForm({
+      descripcion: rol.descripcion || "",
+      permisosJson: rol.permisosJson || "{}",
+    });
+    setModalEditar(true);
+  };
+
+  const guardarEdicionRol = async () => {
     if (!rolSeleccionado) return;
 
     try {
       await editarRol(rolSeleccionado.id, {
-        descripcion: form.descripcion,
-        permisosJson: form.permisosJson,
+        descripcion: editarForm.descripcion.trim(),
+        permisosJson: editarForm.permisosJson || "{}",
       });
 
       showToast("Rol actualizado ✔", "info");
       setModalEditar(false);
-      setRolSeleccionado(null);
     } catch (err) {
-      console.error("[Roles] Error editando rol", err);
+      console.error("[Roles] Error actualizando rol", err);
       showToast("No se pudo actualizar el rol", "danger");
     }
   };
 
-  const handleEliminarRol = async () => {
+  const abrirModalEliminar = (rol) => {
+    setRolSeleccionado(rol);
+    setModalEliminar(true);
+  };
+
+  const confirmarEliminarRol = async () => {
     if (!rolSeleccionado) return;
 
     try {
       await eliminarRol(rolSeleccionado.id);
       showToast("Rol eliminado ❌", "danger");
       setModalEliminar(false);
-      setRolSeleccionado(null);
     } catch (err) {
       console.error("[Roles] Error eliminando rol", err);
       showToast("No se pudo eliminar el rol", "danger");
     }
   };
 
-  // ---------------------------
-  // Render
-  // ---------------------------
-
-  if (!user) {
-    return (
-      <div className="container py-4">
-        Debes iniciar sesión para ver los roles.
-      </div>
-    );
-  }
-
-  if (!esAdmin) {
-    return (
-      <div className="container py-4">
-        No tenés permisos para administrar roles.
-      </div>
-    );
-  }
+  const resumenPermisos = (permisosJson) => {
+    if (!permisosJson) return "Sin permisos";
+    try {
+      const obj = JSON.parse(permisosJson);
+      const keys = Object.keys(obj);
+      if (keys.length === 0) return "Sin permisos";
+      return `${keys.length} módulo(s)`;
+    } catch {
+      return "JSON inválido";
+    }
+  };
 
   return (
-    <div className="container-fluid py-4 animate__animated animate__fadeIn">
-      <div
-        id="toastContainer"
-        className="position-fixed top-0 end-0 p-3"
-        style={{ zIndex: 2000 }}
-      ></div>
-
+    <div className="container-fluid py-4">
       {/* HEADER */}
-      <header className="mb-4">
-        <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-          <div>
-            <h1 className="h3 fw-bold">Roles y permisos</h1>
-            <p className="text-muted mb-0">
-              Define qué puede hacer cada tipo de usuario en el sistema.
-            </p>
-          </div>
-
-          <button
-            className="btn btn-outline-secondary"
-            onClick={recargar}
-            disabled={loading}
-          >
-            <i className="bi bi-arrow-clockwise me-1"></i>
-            Recargar
-          </button>
+      <header className="mb-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h1 className="h3 fw-bold">Roles y permisos</h1>
+          <p className="text-muted">
+            Definí qué puede hacer cada tipo de usuario en el CRM.
+          </p>
         </div>
 
-        {error && (
-          <div className="alert alert-danger mt-2">{error}</div>
-        )}
+        <button className="btn btn-dark" onClick={abrirModalAgregar}>
+          <i className="bi bi-shield-lock me-2" />
+          Nuevo rol
+        </button>
       </header>
 
-      {/* BARRA DE BÚSQUEDA + BOTÓN */}
-      <RolesBusquedaBar
-        busqueda={busqueda}
-        onBusquedaChange={setBusqueda}
-        puedeCrear={esAdmin}
-        onNuevoRol={() => setModalNuevo(true)}
-      />
-
-      {/* LISTA / ESTADO */}
-      {loading ? (
-        <p className="text-muted">Cargando roles…</p>
-      ) : (
-        <RolesTabla
-          roles={rolesFiltrados}
-          puedeEditar={esAdmin}
-          onEditar={(r) => {
-            setRolSeleccionado(r);
-            setModalEditar(true);
-          }}
-          onEliminar={(r) => {
-            setRolSeleccionado(r);
-            setModalEliminar(true);
-          }}
+      {/* BUSCADOR */}
+      <div className="mb-3">
+        <input
+          type="text"
+          placeholder="Buscar rol por nombre o descripción..."
+          className="form-control w-50"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
         />
+      </div>
+
+      {/* ESTADO DE CARGA / ERROR */}
+      {loading && <p>Cargando roles…</p>}
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      {/* TABLA */}
+      <div className="card border-0 shadow-sm">
+        <div className="card-body p-0">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Permisos</th>
+                <th className="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rolesFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-4 text-muted">
+                    No se encontraron roles.
+                  </td>
+                </tr>
+              ) : (
+                rolesFiltrados.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.nombre}</td>
+                    <td>{r.descripcion || "—"}</td>
+                    <td>{resumenPermisos(r.permisosJson)}</td>
+                    <td className="text-end">
+                      <button
+                        className="btn btn-sm btn-outline-primary me-2"
+                        onClick={() => abrirModalEditar(r)}
+                      >
+                        <i className="bi bi-pencil" />
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => abrirModalEliminar(r)}
+                      >
+                        <i className="bi bi-trash" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* MODAL AGREGAR */}
+      {modalAgregar && (
+        <div
+          className="modal fade show d-block"
+          style={{ background: "#00000090" }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content shadow">
+              <div className="modal-header bg-dark text-white">
+                <h5 className="modal-title">Nuevo rol</h5>
+                <button
+                  className="btn-close btn-close-white"
+                  onClick={() => setModalAgregar(false)}
+                ></button>
+              </div>
+
+              <div className="modal-body">
+                <label className="form-label fw-semibold">Nombre</label>
+                <input
+                  type="text"
+                  className="form-control mb-3"
+                  value={nuevoRol.nombre}
+                  onChange={(e) =>
+                    setNuevoRol((prev) => ({
+                      ...prev,
+                      nombre: e.target.value,
+                    }))
+                  }
+                />
+
+                <label className="form-label fw-semibold">Descripción</label>
+                <textarea
+                  className="form-control mb-3"
+                  value={nuevoRol.descripcion}
+                  onChange={(e) =>
+                    setNuevoRol((prev) => ({
+                      ...prev,
+                      descripcion: e.target.value,
+                    }))
+                  }
+                />
+
+                <label className="form-label fw-semibold">
+                  Permisos (JSON)
+                </label>
+                <textarea
+                  className="form-control"
+                  rows={4}
+                  value={nuevoRol.permisosJson}
+                  onChange={(e) =>
+                    setNuevoRol((prev) => ({
+                      ...prev,
+                      permisosJson: e.target.value,
+                    }))
+                  }
+                />
+                <small className="text-muted">
+                  Ejemplo: {"{ \"contactos\": [\"ver\",\"editar\"], \"tareas\": [\"crear\"] }"}
+                </small>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setModalAgregar(false)}
+                >
+                  Cancelar
+                </button>
+                <button className="btn btn-dark" onClick={guardarNuevoRol}>
+                  Guardar rol
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* MODALES */}
-      {modalNuevo && (
-        <RolNuevoModal
-          onClose={() => setModalNuevo(false)}
-          onSave={handleGuardarNuevoRol}
-        />
-      )}
-
+      {/* MODAL EDITAR */}
       {modalEditar && rolSeleccionado && (
-        <RolEditarModal
-          rol={rolSeleccionado}
-          onClose={() => {
-            setModalEditar(false);
-            setRolSeleccionado(null);
-          }}
-          onSave={handleGuardarEdicionRol}
-        />
+        <div
+          className="modal fade show d-block"
+          style={{ background: "#00000090" }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content shadow">
+              <div className="modal-header">
+                <h5 className="modal-title">Editar rol</h5>
+                <button
+                  className="btn-close"
+                  onClick={() => setModalEditar(false)}
+                ></button>
+              </div>
+
+              <div className="modal-body">
+                <p>
+                  <strong>Rol:</strong> {rolSeleccionado.nombre}
+                </p>
+
+                <label className="form-label fw-semibold">Descripción</label>
+                <textarea
+                  className="form-control mb-3"
+                  value={editarForm.descripcion}
+                  onChange={(e) =>
+                    setEditarForm((prev) => ({
+                      ...prev,
+                      descripcion: e.target.value,
+                    }))
+                  }
+                />
+
+                <label className="form-label fw-semibold">
+                  Permisos (JSON)
+                </label>
+                <textarea
+                  className="form-control"
+                  rows={4}
+                  value={editarForm.permisosJson}
+                  onChange={(e) =>
+                    setEditarForm((prev) => ({
+                      ...prev,
+                      permisosJson: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setModalEditar(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={guardarEdicionRol}
+                >
+                  Guardar cambios
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
+      {/* MODAL ELIMINAR */}
       {modalEliminar && rolSeleccionado && (
-        <RolEliminarModal
-          rol={rolSeleccionado}
-          onClose={() => {
-            setModalEliminar(false);
-            setRolSeleccionado(null);
-          }}
-          onDelete={handleEliminarRol}
-        />
+        <div
+          className="modal fade show d-block"
+          style={{ background: "#00000090" }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content shadow">
+              <div className="modal-header">
+                <h5 className="modal-title text-danger">Eliminar rol</h5>
+                <button
+                  className="btn-close"
+                  onClick={() => setModalEliminar(false)}
+                ></button>
+              </div>
+
+              <div className="modal-body">
+                <p>
+                  ¿Seguro que querés eliminar el rol{" "}
+                  <strong>{rolSeleccionado.nombre}</strong>?
+                </p>
+                <p className="text-muted small mb-0">
+                  Esta acción no se puede deshacer.
+                </p>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setModalEliminar(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={confirmarEliminarRol}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
